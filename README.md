@@ -4,6 +4,8 @@ Cross-platform Python CLI for managing a master DJ music library and syncing to 
 
 **Works on macOS and Windows.** No bash required.
 
+**Continuing on Windows?** Read [AGENT_HANDOFF.md](AGENT_HANDOFF.md) first.
+
 ---
 
 ## Quick start
