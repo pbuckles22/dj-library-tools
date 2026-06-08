@@ -1,0 +1,16 @@
+#!/bin/bash
+# Strip Cursor co-author / attribution trailers injected by the IDE.
+# Cursor Settings > Agents > Attribution is the proper fix; this is a backup.
+
+MSG_FILE="$1"
+
+if [[ ! -f "$MSG_FILE" ]]; then
+  exit 0
+fi
+
+# macOS sed
+if sed --version >/dev/null 2>&1; then
+  sed -i '/cursoragent@cursor\.com/d;/Co-authored-by: Cursor/d;/Made-with: Cursor/d' "$MSG_FILE"
+else
+  sed -i '' '/cursoragent@cursor\.com/d;/Co-authored-by: Cursor/d;/Made-with: Cursor/d' "$MSG_FILE"
+fi
