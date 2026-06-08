@@ -1,0 +1,15 @@
+{
+  "_comment": "DJ Library Tools config. Copy this to config.local.json and edit — local config overrides this file. config.local.json is gitignored.",
+  "master": {
+    "mac":     "/Volumes/buckles/My.Documents/My Music/Master",
+    "windows": "\\\\buckles\\My.Documents\\My Music\\Master"
+  },
+  "serato_latest_import": {
+    "mac":     "~/Music/_Serato_/Imported/Latest Import",
+    "windows": "~\\Music\\_Serato_\\Imported\\Latest Import"
+  },
+  "rekordbox_music": {
+    "mac":     "~/Music/RekordboxMusic",
+    "windows": "~\\Music\\RekordboxMusic"
+  }
+}
