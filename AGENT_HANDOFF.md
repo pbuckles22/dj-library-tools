@@ -211,13 +211,37 @@ Hash library backup (optional): copy `Master/_meta/hash_library.json` to `backup
 
 ---
 
+## Run and test
+
+**Merge-ready command** (run before commit on behavior changes):
+
+```powershell
+python -m pytest -q
+```
+
+Install dev deps: `pip install -r requirements-dev.txt`
+
+See [TEST_PLAN.md](TEST_PLAN.md) for Tier 1 / Tier 2 strategy and [.cursor/skills/TEST_TDD.md](.cursor/skills/TEST_TDD.md) for TDD discipline.
+
+---
+
+## Git workflow
+
+1. **Integration branch:** `main`
+2. **Feature branches:** `feature/<topic>` or `fix/<topic>` — see [.cursor/skills/github-feature-workflow/SKILL.md](.cursor/skills/github-feature-workflow/SKILL.md)
+3. **Before commit:** merge-ready command green
+4. **Pull requests:** optional — direct push to `main` after green tests is fine
+
+**Agentic layer:** `.cursor/rules/` and `.cursor/skills/` adapted from [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate). To pull shared skill updates: `git remote add upstream https://github.com/pbuckles22/AgenticTemplate.git` (once), then `git fetch upstream && git merge upstream/main` — resolve conflicts keeping DJ-specific files (`DEV_GUIDE.md`, `AGENT_HANDOFF.md`, `always.mdc`).
+
+---
+
 ## Agent notes
 
 - **Master is the single source of truth.** Never delete from Master without explicit user approval.
 - **Old library cleanup:** delete only files in `tag_compare_in_master.txt` / confirmed dupes — not the 1,937 “not in Master” without review.
 - **Do not commit:** `config.local.json`, `backup/`, `tag_compare_*`, `master_compare_*`
 - **Cursor commit attribution:** disable in Settings → Agents → Attribution if unwanted
-- **TDD / Flutter rules:** N/A — this is a standalone Python CLI, not the Flutter AgenticTemplate project
 
 ---
 
@@ -226,6 +250,9 @@ Hash library backup (optional): copy `Master/_meta/hash_library.json` to `backup
 | File | Contents |
 |------|----------|
 | [README.md](README.md) | CLI reference |
+| [TEST_PLAN.md](TEST_PLAN.md) | Tier 1 / Tier 2 test commands |
+| [TECH_DEBT.md](TECH_DEBT.md) | Ranked tech debt backlog |
+| [RISKS.md](RISKS.md) | Top operational risks |
 | [notes/WORKFLOW.md](notes/WORKFLOW.md) | Day-to-day pipeline |
 | [notes/SETUP.md](notes/SETUP.md) | One-time setup, DJ City |
 | [notes/FOLDER_LAYOUT.md](notes/FOLDER_LAYOUT.md) | Scripts vs runtime state |

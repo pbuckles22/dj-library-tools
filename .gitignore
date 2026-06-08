@@ -1,7 +1,15 @@
 .DS_Store
+Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+
+# Local handoff notes (keep _template.md and README in repo)
+.cursor/handoff/handoff-*.md
+.cursor/handoff/*-handoff-*.md
+doc/handoff/HANDOFF-*.md
+doc/handoff/*-HANDOFF-*.md
 
 # Local config overrides (machine-specific paths)
 config.local.json

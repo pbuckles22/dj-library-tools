@@ -1,0 +1,22 @@
+---
+description: Project context — apply in every session
+alwaysApply: true
+---
+
+# DJ Library Tools
+
+Cross-platform Python CLI to manage the **Master** DJ music library on NAS and sync to Serato/Rekordbox. Documented in README.md and AGENT_HANDOFF.md.
+
+Source of truth: AGENT_HANDOFF.md, TEST_PLAN.md, TECH_DEBT.md, RISKS.md; `.cursor/skills/` (DEV_GUIDE, TEST_TDD, tester, green-and-clean, context-bootstrapper, session-summarizer, code-reviewer, tech-debt-evaluator, github-feature-workflow).
+
+**Operating model:** Use green-and-clean for scope discipline; use context-bootstrapper when starting/resuming; use session-summarizer when handing off.
+
+**TDD:** Read TEST_TDD.md and tester skill first; Tier 1 is `python -m pytest -q`. Add failing tests before new production logic in `lib/`.
+
+**Merge-ready:** `python -m pytest -q` (documented in AGENT_HANDOFF.md). Run before commit on behavior changes.
+
+**Branches / push:** Follow `.cursor/skills/github-feature-workflow/SKILL.md` and AGENT_HANDOFF.md → Git workflow.
+
+**Safety:** Master is the single source of truth. Never delete from Master without explicit user approval.
+
+**Handoff:** When the user wants a handoff, run code review, tech debt evaluation, and pytest; record in the handoff note. See `.cursor/rules/handoff-checklist.mdc`.
