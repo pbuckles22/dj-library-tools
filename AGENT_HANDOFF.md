@@ -17,15 +17,27 @@ Cross-platform Python CLI to manage the **Master** DJ music library on NAS (buck
 
 ---
 
-## Current state (Mac session, June 2026)
+## Current state (June 2026)
 
-### Done
+### Engineering foundation — complete
 
 | Item | Status |
 |------|--------|
-| Repo created and pushed | `pbuckles22/dj-library-tools` on GitHub |
-| Bash scripts replaced | Python CLI: `dj.py` + `lib/` |
-| Cross-platform config | `config.json` with `mac` / `windows` paths |
+| pytest + 24 Tier 1 tests | ✅ `python -m pytest -q` |
+| GitHub Actions CI | ✅ 3.10 / 3.12 / 3.13 |
+| AgenticTemplate skill pod + handoff workflow | ✅ |
+| SDD pre-commit gate (no PRs) | ✅ |
+| Upstream sync (`upstream` → AgenticTemplate) | ✅ |
+
+Latest handoff: `.cursor/handoff/0001-handoff-2026-06-09_0924.md`
+
+### Library / CLI (unchanged)
+
+| Item | Status |
+|------|--------|
+| Repo on GitHub | `pbuckles22/dj-library-tools` |
+| Python CLI | `dj.py` + `lib/` |
+| Cross-platform config | `config.json` + `config.local.json` |
 | Tag-based compare (old library vs Master) | **Completed on Mac** |
 | Git hook for Cursor attribution | `scripts/install-hooks.sh` (optional on Windows) |
 
