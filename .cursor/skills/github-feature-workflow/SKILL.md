@@ -53,6 +53,7 @@ When 1–4 are green: **commit** (and **push** when integrating to `main` per AG
 - **Before commits** that change behavior or tests (not one-line doc typos): run your **merge-ready command** — same gate as [AGENT_HANDOFF.md](../../AGENT_HANDOFF.md) for **`main`**.
 - **Before merging** to **`main`**: merge-ready green on the feature branch.
 - **Before starting the next feature** after a merged story: run merge-ready on updated **`main`** (`git checkout main && git pull`) so Tier 1 + Tier 2 still pass against **origin/main** before new work begins (catches drift if the final gate was skipped).
+- **After push to `main`:** run **Verify CI after push** (above) when the repo has GitHub Actions — users may learn about failures via email before agents do; agents must check explicitly.
 
 ## Standard sequence
 
@@ -63,8 +64,18 @@ When 1–4 are green: **commit** (and **push** when integrating to `main` per AG
 5. **Commit:** clear, imperative subject line; body only if context helps (what/why, not noise). One logical commit per slice is fine; multiple small commits are fine if they tell a story.
 6. **Push:** `git push -u origin <branch>` (first time); later `git push` on that branch.
 7. **Integrate to `main`:** Prefer what the user asked for: **local merge** (`git checkout main && git pull && git merge <branch> && [merge-ready] && git push origin main`) when they want work on `main` without a PR, or **they** handle GitHub merge if they use the web UI. **Do not** nudge them toward opening a PR by default.
-8. **After merge to `main`:** checkout `main`, `git pull`, **delete the local feature branch** (`git branch -d <branch>`). Delete remote: `git push origin --delete <branch>` when the user wants the remote branch removed.
-9. **Update product state** if scope shipped: [PM_PLAN.md](../../PM_PLAN.md) and your product plan — not only git history.
+8. **Verify CI after push** (when GitHub Actions or equivalent exist): agents do **not** receive GitHub email notifications. After pushing to `main` (or any branch with CI), confirm the remote run — do not treat local merge-ready alone as ship-complete.
+
+   ```bash
+   gh run watch --repo OWNER/REPO          # wait for the latest run to finish
+   gh run list --repo OWNER/REPO --limit 1 # check status if watch is unavailable
+   gh run view <run-id> --log-failed       # diagnose failures
+   ```
+
+   Local tests can pass while CI fails (different OS, env vars, path semantics). Fix and push again until CI is green before declaring the slice done.
+
+9. **After merge to `main`:** checkout `main`, `git pull`, **delete the local feature branch** (`git branch -d <branch>`). Delete remote: `git push origin --delete <branch>` when the user wants the remote branch removed.
+10. **Update product state** if scope shipped: [PM_PLAN.md](../../PM_PLAN.md) and your product plan — not only git history.
 
 **PR (explicit opt-in only):** If and only if the user asked for a PR or GitHub review, add a PR with a short title and note merge-ready green. Otherwise skip PR language entirely.
 

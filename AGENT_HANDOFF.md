@@ -246,7 +246,14 @@ Any **FAIL** blocks commit. See [.cursor/rules/pre-commit-gate.mdc](.cursor/rule
 1. **Integration branch:** `main` — all shipped state lands here via direct merge/push.
 2. **Feature branches:** `feature/<topic>` or `fix/<topic>` — see [.cursor/skills/github-feature-workflow/SKILL.md](.cursor/skills/github-feature-workflow/SKILL.md).
 3. **Before commit:** pre-commit pod consensus + merge-ready green.
-4. **Pull requests:** **not used** (SDD). Do not suggest opening a PR.
+4. **After push to `main`:** verify CI — agents do not get failure emails:
+
+   ```powershell
+   gh run watch --repo pbuckles22/dj-library-tools
+   gh run view <run-id> --log-failed   # if failed
+   ```
+
+5. **Pull requests:** **not used** (SDD). Do not suggest opening a PR.
 
 ### Upstream sync (AgenticTemplate)
 
