@@ -67,9 +67,12 @@ When 1–4 are green: **commit** (and **push** when integrating to `main` per AG
 8. **Verify CI after push** (when GitHub Actions or equivalent exist): agents do **not** receive GitHub email notifications. After pushing to `main` (or any branch with CI), confirm the remote run — do not treat local merge-ready alone as ship-complete.
 
    ```bash
-   gh run watch --repo OWNER/REPO          # wait for the latest run to finish
-   gh run list --repo OWNER/REPO --limit 1 # check status if watch is unavailable
-   gh run view <run-id> --log-failed       # diagnose failures
+   # Get latest run ID, then watch (required in non-interactive/agent sessions)
+   RUN=$(gh run list --repo OWNER/REPO --limit 1 --json databaseId -q '.[0].databaseId')
+   gh run watch "$RUN" --exit-status
+
+   gh run list --repo OWNER/REPO --limit 1              # quick status check
+   gh run view <run-id> --log-failed                     # diagnose failures
    ```
 
    Local tests can pass while CI fails (different OS, env vars, path semantics). Fix and push again until CI is green before declaring the slice done.

@@ -249,8 +249,9 @@ Any **FAIL** blocks commit. See [.cursor/rules/pre-commit-gate.mdc](.cursor/rule
 4. **After push to `main`:** verify CI — agents do not get failure emails:
 
    ```powershell
-   gh run watch --repo pbuckles22/dj-library-tools
-   gh run view <run-id> --log-failed   # if failed
+   $run = gh run list --repo pbuckles22/dj-library-tools --limit 1 --json databaseId -q '.[0].databaseId'
+   gh run watch $run --exit-status
+   gh run view $run --log-failed   # if failed
    ```
 
 5. **Pull requests:** **not used** (SDD). Do not suggest opening a PR.
