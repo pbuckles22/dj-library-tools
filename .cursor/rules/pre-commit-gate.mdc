@@ -1,0 +1,36 @@
+---
+description: Subagent pre-commit review — mandatory before commit; replaces PRs per SDD
+alwaysApply: true
+---
+
+# Pre-commit review (team consensus — no PRs)
+
+**SDD policy:** Pull requests are **not raised** in this repo. The agent pod below **is** the pre-commit review gate. Team consensus (all relevant checks PASS) is required before `git commit` on anything beyond trivial doc typos.
+
+## When writing or changing code
+
+- **tester** + [TEST_TDD.md](../skills/TEST_TDD.md): failing test first at Tier 1 when logic changes; keep suite green after each step.
+- **green-and-clean**: bounded scope; verifiable acceptance criteria; no "done-ish."
+
+## Before every commit (non-trivial)
+
+Run these **in order** on the change set (`git diff` / `git diff --cached`). Record PASS/WARN/FAIL (brief summary) in the session or handoff note:
+
+| # | Skill | Role |
+|---|-------|------|
+| 1 | **tester** | Run merge-ready: `python -m pytest -q` — must be green |
+| 2 | **code-reviewer** | Correctness, conventions, tests for new behavior — [.cursor/skills/code-reviewer/SKILL.md](../skills/code-reviewer/SKILL.md) |
+| 3 | **code-quality-gate** | Diff-scoped readability, structure, anti-spaghetti — [.cursor/skills/code-quality-gate/SKILL.md](../skills/code-quality-gate/SKILL.md) |
+| 4 | **tech-debt-evaluator** | New debt noted; promote persistent items to [TECH_DEBT.md](../../TECH_DEBT.md) |
+| 5 | **security-reviewer** | **When relevant** (paths, subprocess, file delete, secrets) — PASS/WARN/FAIL |
+
+**Any FAIL blocks commit** until fixed. WARN is acceptable with a noted follow-up.
+
+## On commit and merge to main
+
+- **github-feature-workflow**: merge-ready green → pod consensus → commit → push/merge to `main` — **no PR step**.
+- **release-manager**: merge meets [RELEASE.md](../../RELEASE.md) criteria.
+
+## On handoff
+
+Run the full checklist: [.cursor/rules/handoff-checklist.mdc](handoff-checklist.mdc) (code review, tech debt, tests, optional security, session note).

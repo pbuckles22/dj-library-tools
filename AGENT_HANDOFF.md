@@ -225,14 +225,51 @@ See [TEST_PLAN.md](TEST_PLAN.md) for Tier 1 / Tier 2 strategy and [.cursor/skill
 
 ---
 
+## Pre-commit review (SDD — no PRs)
+
+**Pull requests are not raised** in this repo. The agent pod is the pre-commit review gate — team consensus before commit.
+
+Before every non-trivial commit, run in order (record PASS/WARN/FAIL):
+
+1. **tester** — merge-ready command green
+2. **code-reviewer** — correctness, conventions, tests for new behavior
+3. **code-quality-gate** — diff-scoped maintainability
+4. **tech-debt-evaluator** — note new debt; update TECH_DEBT.md if persistent
+5. **security-reviewer** — when paths, subprocess, deletes, or secrets touched
+
+Any **FAIL** blocks commit. See [.cursor/rules/pre-commit-gate.mdc](.cursor/rules/pre-commit-gate.mdc).
+
+---
+
 ## Git workflow
 
-1. **Integration branch:** `main`
-2. **Feature branches:** `feature/<topic>` or `fix/<topic>` — see [.cursor/skills/github-feature-workflow/SKILL.md](.cursor/skills/github-feature-workflow/SKILL.md)
-3. **Before commit:** merge-ready command green
-4. **Pull requests:** optional — direct push to `main` after green tests is fine
+1. **Integration branch:** `main` — all shipped state lands here via direct merge/push.
+2. **Feature branches:** `feature/<topic>` or `fix/<topic>` — see [.cursor/skills/github-feature-workflow/SKILL.md](.cursor/skills/github-feature-workflow/SKILL.md).
+3. **Before commit:** pre-commit pod consensus + merge-ready green.
+4. **Pull requests:** **not used** (SDD). Do not suggest opening a PR.
 
-**Agentic layer:** `.cursor/rules/` and `.cursor/skills/` adapted from [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate). To pull shared skill updates: `git remote add upstream https://github.com/pbuckles22/AgenticTemplate.git` (once), then `git fetch upstream && git merge upstream/main` — resolve conflicts keeping DJ-specific files (`DEV_GUIDE.md`, `AGENT_HANDOFF.md`, `always.mdc`).
+### Upstream sync (AgenticTemplate)
+
+Shared skills and rules track [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate):
+
+```powershell
+git fetch upstream
+git merge upstream/main
+# Resolve conflicts — keep DJ-specific: DEV_GUIDE.md, AGENT_HANDOFF.md, always.mdc, PM_PLAN.md
+git push origin main
+```
+
+Remote: `upstream` → `https://github.com/pbuckles22/AgenticTemplate.git`
+
+---
+
+## Handoff protocol
+
+When ending a session or the user asks for a handoff:
+
+1. Run [.cursor/rules/handoff-checklist.mdc](.cursor/rules/handoff-checklist.mdc) (code review, tech debt, tests, security if relevant).
+2. Write a session note: `.cursor/handoff/NNNN-handoff-YYYY-MM-DD_HHmm.md` (gitignored; see [.cursor/handoff/README.md](.cursor/handoff/README.md)).
+3. Update **PM_PLAN.md** and AGENT_HANDOFF **Current state** when shipped scope changed.
 
 ---
 
@@ -251,6 +288,8 @@ See [TEST_PLAN.md](TEST_PLAN.md) for Tier 1 / Tier 2 strategy and [.cursor/skill
 |------|----------|
 | [README.md](README.md) | CLI reference |
 | [TEST_PLAN.md](TEST_PLAN.md) | Tier 1 / Tier 2 test commands |
+| [PM_PLAN.md](PM_PLAN.md) | Phase scope and checkboxes |
+| [RELEASE.md](RELEASE.md) | Merge-ready and rollback discipline |
 | [TECH_DEBT.md](TECH_DEBT.md) | Ranked tech debt backlog |
 | [RISKS.md](RISKS.md) | Top operational risks |
 | [notes/WORKFLOW.md](notes/WORKFLOW.md) | Day-to-day pipeline |

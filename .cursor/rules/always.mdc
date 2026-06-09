@@ -5,18 +5,22 @@ alwaysApply: true
 
 # DJ Library Tools
 
-Cross-platform Python CLI to manage the **Master** DJ music library on NAS and sync to Serato/Rekordbox. Documented in README.md and AGENT_HANDOFF.md.
+Cross-platform Python CLI to manage the **Master** DJ music library on NAS and sync to Serato/Rekordbox.
 
-Source of truth: AGENT_HANDOFF.md, TEST_PLAN.md, TECH_DEBT.md, RISKS.md; `.cursor/skills/` (DEV_GUIDE, TEST_TDD, tester, green-and-clean, context-bootstrapper, session-summarizer, code-reviewer, tech-debt-evaluator, github-feature-workflow).
+**Source of truth:** AGENT_HANDOFF.md, PM_PLAN.md, TEST_PLAN.md, TECH_DEBT.md, RISKS.md, RELEASE.md, INCIDENTS.md; `.cursor/skills/` (see [.cursor/skills/README.md](.cursor/skills/README.md)).
 
-**Operating model:** Use green-and-clean for scope discipline; use context-bootstrapper when starting/resuming; use session-summarizer when handing off.
+**SDD — no PRs:** Pull requests are **not raised**. Pre-commit review is the **agent pod consensus** — see [.cursor/rules/pre-commit-gate.mdc](.cursor/rules/pre-commit-gate.mdc). Before commit: tester (pytest green) → code-reviewer → code-quality-gate → tech-debt-evaluator → security-reviewer when relevant.
 
-**TDD:** Read TEST_TDD.md and tester skill first; Tier 1 is `python -m pytest -q`. Add failing tests before new production logic in `lib/`.
+**Operating model:** green-and-clean (scope); context-bootstrapper (start/resume); session-summarizer (handoff).
 
-**Merge-ready:** `python -m pytest -q` (documented in AGENT_HANDOFF.md). Run before commit on behavior changes.
+**TDD:** TEST_TDD.md + tester skill; Tier 1 = `python -m pytest -q`.
 
-**Branches / push:** Follow `.cursor/skills/github-feature-workflow/SKILL.md` and AGENT_HANDOFF.md → Git workflow.
+**Merge-ready:** `python -m pytest -q` — run before commit; same gate as CI.
 
-**Safety:** Master is the single source of truth. Never delete from Master without explicit user approval.
+**Git:** github-feature-workflow skill — feature branch → pod consensus → commit → merge/push to `main` (no PR).
 
-**Handoff:** When the user wants a handoff, run code review, tech debt evaluation, and pytest; record in the handoff note. See `.cursor/rules/handoff-checklist.mdc`.
+**Safety:** Master is source of truth. Never delete from Master without explicit user approval.
+
+**Handoff:** handoff-checklist.mdc when user wants a handoff.
+
+**Upstream:** Tracks [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate) — `git fetch upstream && git merge upstream/main` for shared skills/rules.
