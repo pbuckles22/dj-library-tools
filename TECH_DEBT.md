@@ -8,4 +8,5 @@ Ranked backlog. Promote "Do first" items from handoff notes here.
 | 2 | Packaging | Flat layout with `sys.path` hack | Add `lib/__init__.py`; optional `pip install -e .` |
 | 3 | Lint | No ruff/format gate | Add ruff to dev deps and merge-ready command |
 | 4 | Platform | `tag_compare_delete.sh` is bash-only | Add PowerShell delete helper for Windows |
-| 5 | Config | Shallow merge (top-level keys only) | Deep merge if nested config grows |
+| 5 | Feature | No `dj.py tag` (AcoustID/MusicBrainz) | Add `lib/tag.py`; pyacoustid in requirements |
+| 6 | Config | Shallow merge (top-level keys only) | Deep merge if nested config grows |

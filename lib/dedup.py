@@ -96,7 +96,7 @@ def load_hash_lib(meta: Path) -> dict:
 
 def save_hash_lib(meta: Path, lib: dict) -> None:
     path = meta / "hash_library.json"
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(lib, f, indent=2)
 
 
@@ -108,12 +108,12 @@ def _write_delete_script(meta: Path, to_delete: list) -> None:
     report_path = meta / "duplicate_report.txt"
     script_path = meta / "delete_duplicates.sh"
 
-    with open(report_path, "w") as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write("Duplicates to remove (lower bit rate).\n" + "=" * 80 + "\n\n")
         f.write("\n".join(f"DELETE: {Path(p).name}" for p in to_delete))
         f.write(f"\n\nTotal: {len(to_delete)}\n")
 
-    with open(script_path, "w") as f:
+    with open(script_path, "w", encoding="utf-8") as f:
         f.write("#!/bin/bash\n\n")
         for p in to_delete:
             escaped = str(p).replace("'", "'\"'\"'")

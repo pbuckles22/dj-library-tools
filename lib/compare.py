@@ -51,7 +51,7 @@ def _write_outputs(prefix: str, in_master, not_in_master, no_tags=None, paired=F
     not_path = _OUT_DIR / f"{prefix}_not_in_master.txt"
     del_path = _OUT_DIR / f"{prefix}_delete.sh"
 
-    with open(in_path, "w") as fh:
+    with open(in_path, "w", encoding="utf-8") as fh:
         fh.write(f"Files whose content/title match Master ({len(in_master)} files).\n")
         fh.write("Safe to delete from the old folder.\n")
         fh.write("=" * 80 + "\n\n")
@@ -62,14 +62,14 @@ def _write_outputs(prefix: str, in_master, not_in_master, no_tags=None, paired=F
             else:
                 fh.write(str(item) + "\n")
 
-    with open(not_path, "w") as fh:
+    with open(not_path, "w", encoding="utf-8") as fh:
         fh.write(f"Files NOT found in Master ({len(not_in_master)} files).\n")
         fh.write("REVIEW before deleting. May be personal tracks.\n")
         fh.write("=" * 80 + "\n\n")
         for p in sorted(not_in_master):
             fh.write(str(p) + "\n")
 
-    with open(del_path, "w") as fh:
+    with open(del_path, "w", encoding="utf-8") as fh:
         fh.write("#!/bin/bash\n")
         fh.write(f"# Delete {len(in_master)} files already confirmed in Master.\n\n")
         items = [x[0] if paired else x for x in in_master]
@@ -80,7 +80,7 @@ def _write_outputs(prefix: str, in_master, not_in_master, no_tags=None, paired=F
 
     if no_tags is not None:
         nt_path = _OUT_DIR / f"{prefix}_no_tags.txt"
-        with open(nt_path, "w") as fh:
+        with open(nt_path, "w", encoding="utf-8") as fh:
             fh.write(f"Files with no readable tags ({len(no_tags)} files). Manual review.\n")
             fh.write("=" * 80 + "\n\n")
             for p in sorted(no_tags):

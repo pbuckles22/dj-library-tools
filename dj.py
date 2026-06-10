@@ -141,8 +141,8 @@ def cmd_compare(args):
 ========================================
   Compare ({mode}) complete
 ========================================
-  In Master:      {len(in_m)}   ← safe to delete
-  Not in Master:  {len(not_in_m)}   ← REVIEW
+  In Master:      {len(in_m)}   (safe to delete from OLD folders)
+  Not in Master:  {len(not_in_m)}   (REVIEW)
 
 Reports written to project folder.
 Run the generated delete script when ready.
@@ -208,6 +208,11 @@ def build_parser():
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     parser = build_parser()
     args   = parser.parse_args()
     args.func(args)

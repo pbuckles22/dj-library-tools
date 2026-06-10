@@ -29,48 +29,45 @@ Cross-platform Python CLI to manage the **Master** DJ music library on NAS (buck
 | SDD pre-commit gate (no PRs) | ✅ |
 | Upstream sync (`upstream` → AgenticTemplate) | ✅ |
 
-Latest handoff: `.cursor/handoff/0001-handoff-2026-06-09_0924.md`
+Latest handoff: `.cursor/handoff/0002-handoff-2026-06-09_1800.md`
 
-### Library / CLI (unchanged)
+### Library state (Windows/NAS, June 2026)
 
 | Item | Status |
 |------|--------|
-| Repo on GitHub | `pbuckles22/dj-library-tools` |
-| Python CLI | `dj.py` + `lib/` |
-| Cross-platform config | `config.json` + `config.local.json` |
-| Tag-based compare (old library vs Master) | **Completed on Mac** |
-| Git hook for Cursor attribution | `scripts/install-hooks.sh` (optional on Windows) |
+| NAS path | `\\chaosnas.local\buckles\My.Documents\My Music\Master` via `config.local.json` |
+| **Master** | **~8,425 tracks / ~51 GB** (flat, source of truth) |
+| Old folders | **1,951** files remain (review list); **16,798** dupes deleted (~86 GB freed) |
+| NewMusic staging | 727 files still on disk (copied to Master; safe to clear when ready) |
+| Rekordbox mirror | Synced from Master |
+| **Serato** | **Paused** — use `--no-serato` or sync rekordbox only |
+| Untagged in Master | **~681** files (no Artist+Title in ID3) — target for `dj.py tag` |
+| AcoustID / MusicBrainz | Keys in `config.local.json` (gitignored); Chromaprint + pyacoustid on Windows |
 
-### Compare results (tag-based, May 2026)
+### Phase 2 operational — mostly complete
 
-Scanned ~18,671 files in old NAS folders (A–Z, iTunes, artist folders, etc.) vs Master (~8,161 tracks).
+- [x] Tag compare all old folders (18,749 scanned → 16,798 / 1,951)
+- [x] Delete confirmed old-folder dupes (Master never touched)
+- [x] NewMusic → Master + pipeline + Rekordbox sync
+- [ ] Review `tag_compare_not_in_master.txt` (1,951)
+- [ ] Implement and run `python dj.py tag --full` on untagged Master files
+
+### Compare results (Windows re-run, June 2026)
 
 | Bucket | Count | Action |
 |--------|-------|--------|
-| **Match in Master** (Artist+Title) | **16,734** | Safe to delete from old folders |
-| **Not in Master** | **1,937** | Review before deleting |
+| Match in Master | **16,798** | Deleted from old folders ✅ |
+| Not in Master | **1,951** | Review / keep |
 | No tags | 0 | — |
 
-**Why tag-based, not MD5:** iTunes/Serato re-tagging changes file bytes; MD5 only found 38 matches. Tag compare is the correct approach.
+Reports (gitignored): `tag_compare_*.txt` in repo root after compare.
 
-**1,937 “not in Master” breakdown (top folders):**
+### Not done yet
 
-| Folder | Files | Notes |
-|--------|-------|-------|
-| `iTunes/` | 1,318 | Old personal iTunes library |
-| `Jasmine Halau music/` | 93 | Personal |
-| Letter folders (P, M, C, …) | rest | Scattered personal / non-DJ tracks |
-
-Most of the 1,937 are personal library, not DJ edits. OK to leave in old folders or archive separately.
-
-### Not done yet (pick up on Windows)
-
-1. **Delete 16,734 confirmed dupes** from old NAS folders (after user confirms)
-2. **Import NewMusic → Master** (~586 files in staging folder)
-3. **Run pipeline** on Master (organize → rename → dedup → sync)
-4. **Re-sync RekordboxMusic** (local mirror was stale: ~6,965 vs ~8,161 in Master)
-
-Mac started delete + NewMusic rsync but those were **interrupted** — verify before re-running.
+1. **`dj.py tag`** — AcoustID → MusicBrainz → write ID3 for ~681 untagged tracks
+2. **Review 1,951** personal/non-DJ files in old folders
+3. **Optional:** clear NewMusic after confirming Master
+4. **Skip** auto Rekordbox crate creation until tags are solid
 
 ---
 
@@ -91,19 +88,19 @@ Copy `config.json` → `config.local.json` (gitignored). Edit **windows** paths:
 ```json
 {
   "master": {
-    "windows": "Z:\\My.Documents\\My Music\\Master"
-  },
-  "serato_latest_import": {
-    "windows": "~\\Music\\_Serato_\\Imported\\Latest Import"
+    "windows": "\\\\chaosnas.local\\buckles\\My.Documents\\My Music\\Master"
   },
   "rekordbox_music": {
     "windows": "~\\Music\\RekordboxMusic"
-  }
+  },
+  "acoustid_api_key": "YOUR_CLIENT_KEY",
+  "musicbrainz_app": "dj-library-tools/1.0 (mailto:you@example.com)"
 }
 ```
 
-- Map NAS share `buckles` to a drive letter (e.g. `Z:`) or use UNC `\\buckles\My.Documents\My Music\Master`
-- `config.local.json` overrides `config.json` — do not commit machine-specific paths
+- Use your NAS hostname (`chaosnas.local`) or mapped drive letter
+- `acoustid_api_key` / `musicbrainz_app` for future `dj.py tag` (optional until tag command exists)
+- Do not commit `config.local.json`
 
 ### 3. Verify NAS is reachable
 
@@ -120,8 +117,8 @@ Should load Master and report incremental/no-op — not “Master not found”.
 Run from repo root with PowerShell or CMD:
 
 ```powershell
-# Daily workflow (after copying new music into Master)
-python dj.py pipeline
+# Daily workflow (Rekordbox-only; Serato paused)
+python dj.py pipeline --no-serato
 
 python dj.py pipeline --full          # full library scan
 python dj.py pipeline --days 7        # last 7 days
