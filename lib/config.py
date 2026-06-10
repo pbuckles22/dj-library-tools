@@ -46,15 +46,31 @@ def load() -> dict:
     # Remove comment key
     merged.pop("_comment", None)
 
+    master = _resolve(merged.get("master", ""))
+    # NewMusic is normally a sibling of Master on the NAS; local config can override.
+    if "newmusic" in local:
+        newmusic = _resolve(merged["newmusic"])
+    else:
+        newmusic = (master.parent / "NewMusic").resolve()
+
     return {
-        "master":               _resolve(merged.get("master", "")),
+        "master":               master,
+        "newmusic":             newmusic,
         "serato_latest_import": _resolve(merged.get("serato_latest_import", "")),
         "rekordbox_music":      _resolve(merged.get("rekordbox_music", "")),
+        "acoustid_api_key":     str(merged.get("acoustid_api_key", "") or "").strip(),
+        "musicbrainz_app":      str(
+            merged.get("musicbrainz_app", "") or "dj-library-tools/1.0"
+        ).strip(),
     }
 
 
 def get_master() -> Path:
     return load()["master"]
+
+
+def get_newmusic() -> Path:
+    return load()["newmusic"]
 
 
 def get_serato() -> Path:
@@ -63,6 +79,23 @@ def get_serato() -> Path:
 
 def get_rekordbox() -> Path:
     return load()["rekordbox_music"]
+
+
+def get_acoustid_key() -> str:
+    return load()["acoustid_api_key"]
+
+
+def get_musicbrainz_app() -> str:
+    return load()["musicbrainz_app"]
+
+
+def require_acoustid_key() -> str:
+    key = get_acoustid_key()
+    if not key:
+        print("Error: acoustid_api_key not set in config.local.json")
+        print("  Get a key at https://acoustid.org/new-application")
+        sys.exit(1)
+    return key
 
 
 def require_master() -> Path:

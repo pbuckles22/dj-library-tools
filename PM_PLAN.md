@@ -2,27 +2,29 @@
 
 ## Current phase
 
-**Phase 2 — Operational cleanup** (June 2026) — **mostly complete**
+**Phase 3 — Metadata & cut policy** (June 2026)
 
-- [x] Delete confirmed dupes from old NAS folders (16,798 deleted, user confirmed)
-- [x] Import NewMusic → Master (727 files via robocopy)
-- [x] Run pipeline on Master (rename, dedup, sync Rekordbox)
-- [x] Re-sync RekordboxMusic
-- [ ] Review 1,951 old-folder “not in Master” files
-- [ ] AcoustID tag sweep (`dj.py tag` — not built yet; ~681 untagged in Master)
+- [x] `dj.py tag` (AcoustID); pipeline tag step
+- [x] NewMusic ingest + validated clear in pipeline
+- [x] Quality tiers (`audit bitrates --tier-cleanup`)
+- [x] Master ~5,205 club tracks; NewMusic cleared
+- [ ] **Cut standardize** — intro aliases → `Intro Clean`
+- [ ] **Cut dedupe narrow** — dry-run then user-approved apply
+- [ ] Shazam manual queue; legacy folder review (`TODO.md`)
 
-**Phase 3 — Metadata enrichment** (next)
+**Phase 2 — Operational cleanup** — **complete**
 
-- [ ] `python dj.py tag` (AcoustID → MusicBrainz → mutagen)
-- [ ] Wire tag into pipeline before rename
-- [ ] Rekordbox-only default (Serato paused)
+- [x] Delete confirmed dupes from old NAS folders (16,798)
+- [x] Pipeline + Rekordbox sync
+- [x] Relocate / cleanup helpers
 
 ## Engineering (ongoing)
 
-- [x] Windows UTF-8 fixes for compare/dedup/rename/sync (handoff 0002)
+- [x] Windows UTF-8 fixes (0477a62)
+- [x] Tier 1 tests: 57 passing
+- [ ] Tier 2 pipeline integration tests
+- [ ] ruff/format gate
 
 ## Next
 
-See [AGENT_HANDOFF.md](AGENT_HANDOFF.md) → Current state and Recommended next steps.
-
-Keep this file in sync with AGENT_HANDOFF when shipped scope changes.
+See [AGENT_HANDOFF.md](AGENT_HANDOFF.md) and [doc/handoff/0003-HANDOFF-2026-06-10_1800.md](doc/handoff/0003-HANDOFF-2026-06-10_1800.md).

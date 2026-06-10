@@ -23,34 +23,37 @@ Cross-platform Python CLI to manage the **Master** DJ music library on NAS (buck
 
 | Item | Status |
 |------|--------|
-| pytest + 24 Tier 1 tests | ✅ `python -m pytest -q` |
+| pytest + **57** Tier 1 tests | ✅ `python -m pytest -q` |
 | GitHub Actions CI | ✅ 3.10 / 3.12 / 3.13 |
 | AgenticTemplate skill pod + handoff workflow | ✅ |
 | SDD pre-commit gate (no PRs) | ✅ |
 | Upstream sync (`upstream` → AgenticTemplate) | ✅ |
 
-Latest handoff: `.cursor/handoff/0002-handoff-2026-06-09_1800.md`
+Latest handoff: [doc/handoff/0003-HANDOFF-2026-06-10_1800.md](doc/handoff/0003-HANDOFF-2026-06-10_1800.md)
 
 ### Library state (Windows/NAS, June 2026)
 
 | Item | Status |
 |------|--------|
 | NAS path | `\\chaosnas.local\buckles\My.Documents\My Music\Master` via `config.local.json` |
-| **Master** | **~8,425 tracks / ~51 GB** (flat, source of truth) |
-| Old folders | **1,951** files remain (review list); **16,798** dupes deleted (~86 GB freed) |
-| NewMusic staging | 727 files still on disk (copied to Master; safe to clear when ready) |
-| Rekordbox mirror | Synced from Master |
-| **Serato** | **Paused** — use `--no-serato` or sync rekordbox only |
-| Untagged in Master | **~681** files (no Artist+Title in ID3) — target for `dj.py tag` |
-| AcoustID / MusicBrainz | Keys in `config.local.json` (gitignored); Chromaprint + pyacoustid on Windows |
+| **Master** | **~5,205 tracks** (club-grade ≥256 kbps after tier cleanup) |
+| **NewMusic** | **0** (pipeline ingest + MD5-validated clear) |
+| **LowQuality/** | ~921 files (161–192 kbps) |
+| **Shazam/** | ~2k manual-tag queue |
+| Rekordbox mirror | Synced; restart Rekordbox after sync |
+| **Serato** | **Paused** — `python dj.py pipeline --no-serato` |
+| Untagged in Master | **0** after AcoustID `--full` sweep |
+| AcoustID / MusicBrainz | Keys in `config.local.json`; `python dj.py tag` built |
 
-### Phase 2 operational — mostly complete
+### Phase 2 operational — complete
 
-- [x] Tag compare all old folders (18,749 scanned → 16,798 / 1,951)
-- [x] Delete confirmed old-folder dupes (Master never touched)
-- [x] NewMusic → Master + pipeline + Rekordbox sync
-- [ ] Review `tag_compare_not_in_master.txt` (1,951)
-- [ ] Implement and run `python dj.py tag --full` on untagged Master files
+- [x] Tag compare + delete old-folder dupes (16,798)
+- [x] NewMusic pipeline (ingest → … → clear)
+- [x] Quality tier cleanup (`audit bitrates --tier-cleanup`)
+- [x] `dj.py tag --full` on Master
+- [x] Relocate WAV/Persian/comedy; junk cleanup under My Music
+- [ ] Cut standardize + narrow dedupe (next — handoff 0003)
+- [ ] Review Shazam queue + legacy folders (see `TODO.md`)
 
 ### Compare results (Windows re-run, June 2026)
 
@@ -64,10 +67,10 @@ Reports (gitignored): `tag_compare_*.txt` in repo root after compare.
 
 ### Not done yet
 
-1. **`dj.py tag`** — AcoustID → MusicBrainz → write ID3 for ~681 untagged tracks
-2. **Review 1,951** personal/non-DJ files in old folders
-3. **Optional:** clear NewMusic after confirming Master
-4. **Skip** auto Rekordbox crate creation until tags are solid
+1. **`dj.py cuts standardize`** + **`cuts dedupe --dry-run`** (Intro Clean preference)
+2. **Shazam** manual listening queue (~2k)
+3. **Review** legacy `My Music` folders with audio (see `TODO.md`)
+4. **`git push origin main`** when policy allows (ahead of origin)
 
 ---
 
@@ -121,15 +124,15 @@ Run from repo root with PowerShell or CMD:
 python dj.py pipeline --no-serato
 
 python dj.py pipeline --full          # full library scan
-python dj.py pipeline --days 7        # last 7 days
-python dj.py pipeline --no-rekordbox  # Serato only
-python dj.py pipeline --no-serato     # Rekordbox only
+python dj.py pipeline --no-tag        # skip AcoustID step
 
 # Individual steps
 python dj.py organize
 python dj.py rename
-python dj.py dedup
+python dj.py tag --full
 python dj.py dedup --full
+python dj.py cuts standardize --full  # (next) intro alias → Intro Clean
+python dj.py cuts dedupe --dry-run    # preview narrow dedupe
 
 # Sync only
 python dj.py sync serato
