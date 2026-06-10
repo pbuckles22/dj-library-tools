@@ -26,6 +26,10 @@ Usage:
   python dj.py tag --dry-run         # preview matches without writing
 
   python dj.py shazam stage          # move Shazam-queue files to My Music/Shazam
+
+  python dj.py cuts standardize --full   # intro aliases -> Intro Clean
+  python dj.py cuts dedupe --full          # dry-run narrow dedupe report
+  python dj.py cuts dedupe --full --apply  # delete extras (after review)
 """
 
 import argparse
@@ -45,6 +49,7 @@ from lib import relocate as relocate_mod
 from lib import shazam_queue as shazam_mod
 from lib import bitrate_audit as bitrate_mod
 from lib import cleanup as cleanup_mod
+from lib import cuts as cuts_mod
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +231,24 @@ def cmd_tag(args):
     )
 
 
+def cmd_cuts(args):
+    master = cfg.require_master()
+    if args.action == "standardize":
+        days = args.days if not args.full else None
+        cuts_mod.standardize_cuts(master, days=days, dry_run=args.dry_run)
+    elif args.action == "dedupe":
+        days = args.days if not args.full else None
+        cuts_mod.dedupe_cuts(
+            master,
+            mode=args.mode,
+            days=days,
+            dry_run=not args.apply,
+        )
+    else:
+        print(f"Unknown cuts action: {args.action}")
+        sys.exit(1)
+
+
 def cmd_compare(args):
     master = cfg.require_master()
     if not args.dirs:
@@ -345,6 +368,29 @@ def build_parser():
     p_tag.add_argument("--limit", type=int, default=None,
                        help="Process at most N files (for testing)")
     p_tag.set_defaults(func=cmd_tag)
+
+    # cuts
+    p_cuts = sub.add_parser("cuts", help="Standardize cut tags; dedupe same-song versions")
+    p_cuts_sub = p_cuts.add_subparsers(dest="action", required=True)
+    p_cuts_std = p_cuts_sub.add_parser(
+        "standardize", help="Rename intro aliases to canonical Intro Clean"
+    )
+    _add_days_full(p_cuts_std)
+    p_cuts_std.add_argument("--dry-run", action="store_true")
+    p_cuts_std.set_defaults(func=cmd_cuts)
+    p_cuts_dd = p_cuts_sub.add_parser(
+        "dedupe", help="Remove alternate cuts when Intro Clean exists (narrow)"
+    )
+    _add_days_full(p_cuts_dd)
+    p_cuts_dd.add_argument(
+        "--mode", choices=["narrow", "strict"], default="narrow",
+        help="narrow: only when intro cut exists (default)",
+    )
+    p_cuts_dd.add_argument(
+        "--apply", action="store_true",
+        help="Delete files (default is dry-run report only)",
+    )
+    p_cuts_dd.set_defaults(func=cmd_cuts)
 
     # compare
     p_cmp = sub.add_parser("compare", help="Compare old folders to Master")
