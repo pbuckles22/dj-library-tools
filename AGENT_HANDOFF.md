@@ -23,7 +23,7 @@ Cross-platform Python CLI to manage the **Master** DJ music library on NAS (buck
 
 | Item | Status |
 |------|--------|
-| pytest + **57** Tier 1 tests | ✅ `python -m pytest -q` |
+| pytest + **66** Tier 1 tests | ✅ `python -m pytest -q` |
 | GitHub Actions CI | ✅ 3.10 / 3.12 / 3.13 |
 | AgenticTemplate skill pod + handoff workflow | ✅ |
 | SDD pre-commit gate (no PRs) | ✅ |
@@ -52,7 +52,7 @@ Latest handoff: [doc/handoff/0003-HANDOFF-2026-06-10_1800.md](doc/handoff/0003-H
 - [x] Quality tier cleanup (`audit bitrates --tier-cleanup`)
 - [x] `dj.py tag --full` on Master
 - [x] Relocate WAV/Persian/comedy; junk cleanup under My Music
-- [ ] Cut standardize + narrow dedupe (next — handoff 0003)
+- [ ] **US-CUT-01** cut standardize + **US-CUT-02** narrow dedupe dry-run (then user-approved apply) — see [doc/requirements/product.md](doc/requirements/product.md)
 - [ ] Review Shazam queue + legacy folders (see `TODO.md`)
 
 ### Compare results (Windows re-run, June 2026)
@@ -67,10 +67,14 @@ Reports (gitignored): `tag_compare_*.txt` in repo root after compare.
 
 ### Not done yet
 
-1. **`dj.py cuts standardize`** + **`cuts dedupe --dry-run`** (Intro Clean preference)
-2. **Shazam** manual listening queue (~2k)
-3. **Review** legacy `My Music` folders with audio (see `TODO.md`)
-4. **`git push origin main`** when policy allows (ahead of origin)
+See [doc/requirements/product.md](doc/requirements/product.md) for full backlog. **Now:**
+
+1. **US-CUT-01** — `python dj.py cuts standardize --full` (dry-run first)
+2. **US-CUT-02** — `python dj.py cuts dedupe --full` → review `Master\_meta\cut_dedup_report.txt` → user-approved `--apply`
+3. **US-SYNC-01** — `python dj.py sync rekordbox` → restart Rekordbox
+4. **US-SHAZ-01** — Shazam manual listening queue (~2k)
+5. **US-CLEAN-02** — Review legacy `My Music` folders (see [TODO.md](TODO.md))
+6. **`git push origin main`** when policy allows (ahead of origin)
 
 ---
 
@@ -309,6 +313,7 @@ When ending a session or the user asks for a handoff:
 | [README.md](README.md) | CLI reference |
 | [TEST_PLAN.md](TEST_PLAN.md) | Tier 1 / Tier 2 test commands |
 | [PM_PLAN.md](PM_PLAN.md) | Phase scope and checkboxes |
+| [doc/requirements/product.md](doc/requirements/product.md) | Epics, user stories, acceptance criteria |
 | [RELEASE.md](RELEASE.md) | Merge-ready and rollback discipline |
 | [TECH_DEBT.md](TECH_DEBT.md) | Ranked tech debt backlog |
 | [RISKS.md](RISKS.md) | Top operational risks |
