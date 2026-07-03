@@ -14,7 +14,7 @@ Cross-platform Python CLI for managing a master DJ music library and syncing to 
 # Install deps (once)
 pip install -r requirements.txt
 
-# After copying new music into Master:
+# After dropping new music into NewMusic:
 python dj.py pipeline              # last 24 hours (default)
 python dj.py pipeline --full       # full library scan
 python dj.py pipeline --no-rekordbox
@@ -28,13 +28,15 @@ On Windows, run from PowerShell or CMD with `python dj.py ...`
 
 | Command | What it does |
 |---------|-------------|
-| `python dj.py pipeline` | organize → rename → dedup → sync Serato + Rekordbox |
+| `python dj.py pipeline` | import NewMusic → organize → rename → dedup → sync Rekordbox |
 | `python dj.py organize` | Move non-audio files in Master root into `_meta` |
 | `python dj.py rename` | Rename files to `Artist - Title.ext` from tags |
 | `python dj.py dedup` | Deduplicate within Master (keeps highest bitrate) |
 | `python dj.py sync serato` | Sync Master → Serato Latest Import |
-| `python dj.py sync rekordbox` | Sync Master → RekordboxMusic |
+| `python dj.py sync rekordbox` | Mirror sync Master → RekordboxMusic (deletes removed) |
 | `python dj.py sync all` | Sync to both |
+| `python dj.py refresh` | **Before Rekordbox:** pull new files NAS → local, verify |
+| `python dj.py pull` | Pull only (no retry/verify); `--dry-run`, `--prune` |
 | `python dj.py compare <dirs>` | Tag-based compare: old folders vs Master |
 | `python dj.py compare --md5 <dirs>` | MD5-based compare (exact byte match) |
 
@@ -44,6 +46,9 @@ On Windows, run from PowerShell or CMD with `python dj.py ...`
 |------|---------|
 | `--days N` | Only process files modified in last N days (default: 1) |
 | `--full` | Full library scan |
+| `--from STEP` | Start at STEP: import, organize, rename, dedup, or sync |
+| `--serato` | Also sync to Serato (off by default) |
+| `--no-rekordbox` | Skip Rekordbox sync |
 
 ---
 

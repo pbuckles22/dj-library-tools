@@ -1,30 +1,50 @@
 # Master Library → Serato + Rekordbox
 
-**Goal:** Master holds songs. Scripts live in `~/dev/dj-master-meta`. Copy new music into Master, run the pipeline. Serato and Rekordbox stay in sync.
+**Goal:** Master holds songs on the NAS. Local mirrors feed Serato and Rekordbox. Run `refresh` before opening Rekordbox.
+
+---
+
+## Before opening Rekordbox (Mac)
+
+Rekordbox must read from the **local** folder, not the NAS. SMB is unreliable and causes "problem loading" on many tracks.
+
+```bash
+# Mount NAS, then:
+python ~/dev/dj-library-tools/dj.py refresh
+```
+
+This pulls new/changed files from NAS Master → `~/Music/RekordboxMusic`, retries over flaky SMB, and reports any unreadable NAS files.
+
+**One-time Rekordbox setup:** File → Add to Collection → `~/Music/RekordboxMusic`. Do not point Rekordbox at the NAS.
+
+**Gigs (CDJ + USB):** Prep in Rekordbox on the laptop, then Export to USB. The CDJ reads the export, not the NAS.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Copy new music into Master (you do this)
-# 2. Run (incremental - last 24 hours only, default):
+# 1. Copy new music into NewMusic (or Master)
+# 2. Run pipeline (incremental - last 24 hours, default):
 python ~/dev/dj-library-tools/dj.py pipeline
 
 # Or for a different window:
 python ~/dev/dj-library-tools/dj.py pipeline --days 2
 python ~/dev/dj-library-tools/dj.py pipeline --full
 python ~/dev/dj-library-tools/dj.py pipeline --no-rekordbox
-python ~/dev/dj-library-tools/dj.py pipeline --no-serato
 
-# Sync only (no organize/rename/dedup):
-python ~/dev/dj-library-tools/dj.py sync serato
+# Refresh local Rekordbox mirror only (no organize/rename/dedup):
+python ~/dev/dj-library-tools/dj.py refresh
+
+# Full mirror sync (also deletes removed files from local):
 python ~/dev/dj-library-tools/dj.py sync rekordbox
 ```
 
-**3. Restart Serato and/or Rekordbox.** By default the main script syncs **both** apps (two full copies on disk). Use `--no-serato` or `--no-rekordbox` if you only want one local mirror.
+**3. Open Rekordbox** after `refresh`. Restart Serato if you ran a Serato sync.
 
 **First time or periodically:** Run `--full` once to build the hash library. Then `--days 1` (default) is fast for daily adds.
+
+**macOS:** Install GNU rsync for accented filenames: `brew install rsync`
 
 ---
 
@@ -73,6 +93,7 @@ Steps: organize → rename → dedup → sync Serato → sync Rekordbox.
 | Dedup | `python dj.py dedup` then review `Master/_meta/delete_duplicates.sh` |
 | Sync Serato | `python dj.py sync serato` |
 | Sync Rekordbox | `python dj.py sync rekordbox` |
+| Refresh local (before Rekordbox) | `python dj.py refresh` |
 
 ---
 

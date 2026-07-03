@@ -1,8 +1,16 @@
 {
-  "_comment": "DJ Library Tools config. Copy this to config.local.json and edit — local config overrides this file. config.local.json is gitignored.",
+  "_comment": "DJ Library Tools config. Copy to config.local.json for machine overrides (gitignored).",
+  "nas_volume": "buckles",
+  "nas_link": {
+    "mac": "~/Music/DJ_Master_Link"
+  },
   "master": {
-    "mac":     "/Volumes/buckles/My.Documents/My Music/Master",
+    "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/Master",
     "windows": "\\\\buckles\\My.Documents\\My Music\\Master"
+  },
+  "new_music": {
+    "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/NewMusic",
+    "windows": "\\\\buckles\\My.Documents\\My Music\\NewMusic"
   },
   "serato_latest_import": {
     "mac":     "~/Music/_Serato_/Imported/Latest Import",
@@ -11,5 +19,13 @@
   "rekordbox_music": {
     "mac":     "~/Music/RekordboxMusic",
     "windows": "~\\Music\\RekordboxMusic"
+  },
+  "gig_usb": {
+    "mac":     "/Volumes/DJ_USB",
+    "windows": ""
+  },
+  "lexicon_root": {
+    "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/Master",
+    "windows": "\\\\buckles\\My.Documents\\My Music\\Master"
   }
 }

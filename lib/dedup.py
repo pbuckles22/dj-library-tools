@@ -15,6 +15,8 @@ try:
 except ImportError:
     MutagenFile = None
 
+from .freeze import is_done
+
 AUDIO_EXTENSIONS = {".mp3", ".flac", ".m4a", ".wav", ".aac", ".ogg", ".alac", ".aiff"}
 
 
@@ -77,6 +79,34 @@ def get_bitrate(filepath: str) -> int:
     if platform.system() == "Darwin":
         return _bitrate_afinfo(filepath)
     return 0
+
+
+def _pick_keeper(file_rates: list[tuple], lib_entry: dict | None, master: Path) -> tuple:
+    """Return (keeper_path, bitrate). Frozen > hash_lib > highest bitrate."""
+    if not file_rates:
+        raise ValueError("empty file_rates")
+    frozen = [(p, br) for p, br in file_rates if is_done(p, master)]
+    if frozen:
+        frozen.sort(key=lambda x: (-x[1], str(x[0])))
+        return frozen[0]
+    if lib_entry:
+        lib_path = Path(lib_entry["path"]).resolve()
+        for p, br in file_rates:
+            if p.resolve() == lib_path:
+                return p, br
+    file_rates.sort(key=lambda x: (-x[1], str(x[0])))
+    return file_rates[0]
+
+
+def _deletion_candidates(file_rates: list[tuple], keeper: Path, master: Path) -> list:
+    out = []
+    for p, _ in file_rates:
+        if p.resolve() == keeper.resolve():
+            continue
+        if is_done(p, master):
+            continue
+        out.append(p)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -158,11 +188,10 @@ def run_full(root: Path, meta: Path) -> list:
                 file_rates.append((p, get_bitrate(str(p))))
         if not file_rates:
             continue
-        file_rates.sort(key=lambda x: (-x[1], str(x[0])))
-        keeper = file_rates[0]
-        lib[md5] = {"path": str(keeper[0]), "bitrate": keeper[1]}
-        for p, _ in file_rates[1:]:
-            to_delete.append(p)
+        lib_entry = lib.get(md5)
+        keeper, keeper_br = _pick_keeper(file_rates, lib_entry, root)
+        lib[md5] = {"path": str(keeper), "bitrate": keeper_br}
+        to_delete.extend(_deletion_candidates(file_rates, keeper, root))
 
     _write_delete_script(meta, to_delete)
     save_hash_lib(meta, lib)
@@ -213,22 +242,29 @@ def run_incremental(root: Path, meta: Path, days: float) -> list:
         file_rates = [(p, get_bitrate(str(p))) for p in paths if p.exists()]
         if not file_rates:
             continue
-        file_rates.sort(key=lambda x: (-x[1], str(x[0])))
-        new_keepers[md5] = (str(file_rates[0][0]), file_rates[0][1])
-        for p, _ in file_rates[1:]:
-            to_delete.append(p)
+        keeper, keeper_br = _pick_keeper(file_rates, None, root)
+        new_keepers[md5] = (str(keeper), keeper_br)
+        to_delete.extend(_deletion_candidates(file_rates, keeper, root))
 
     for md5, (path, bitrate) in new_keepers.items():
         if md5 in lib:
             existing = lib[md5]
-            if bitrate > existing["bitrate"]:
-                old_path = Path(existing["path"])
-                if old_path.exists() and old_path != Path(path):
-                    to_delete.append(old_path)
-                lib[md5] = {"path": path, "bitrate": bitrate}
-            else:
-                p = Path(path)
-                if p.exists():
+            existing_path = Path(existing["path"])
+            candidates = []
+            if existing_path.exists():
+                candidates.append((existing_path, existing["bitrate"]))
+            new_path = Path(path)
+            if new_path.exists():
+                candidates.append((new_path, bitrate))
+            if not candidates:
+                continue
+            keeper, keeper_br = _pick_keeper(
+                [(p, br if br else get_bitrate(str(p))) for p, br in candidates],
+                existing, root,
+            )
+            lib[md5] = {"path": str(keeper), "bitrate": keeper_br}
+            for p, _ in candidates:
+                if p.resolve() != keeper.resolve() and not is_done(p, root):
                     to_delete.append(p)
         else:
             lib[md5] = {"path": path, "bitrate": bitrate}

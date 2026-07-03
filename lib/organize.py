@@ -5,6 +5,8 @@ Move non-audio files from Master root into Master/_meta.
 import time
 from pathlib import Path
 
+from .freeze import is_done
+
 AUDIO_EXTENSIONS = {".mp3", ".flac", ".m4a", ".wav", ".aac", ".ogg", ".alac", ".aiff"}
 SKIP_FILES = {"Thumbs.db", "Desktop.ini", ".DS_Store"}
 
@@ -24,9 +26,12 @@ def organize(master: Path, days: float | None = None) -> int:
     else:
         print("Organizing...")
 
-    moved = 0
+    moved = frozen_skip = 0
     for f in master.iterdir():
         if not f.is_file() or f.parent == meta:
+            continue
+        if is_done(f, master):
+            frozen_skip += 1
             continue
         if cutoff and f.stat().st_mtime < cutoff:
             continue
@@ -46,5 +51,5 @@ def organize(master: Path, days: float | None = None) -> int:
         except OSError as e:
             print(f"  ERROR moving {f.name}: {e}")
 
-    print(f"Moved {moved} file(s) to _meta/")
+    print(f"Moved {moved} file(s) to _meta/  |  frozen skipped: {frozen_skip}")
     return moved

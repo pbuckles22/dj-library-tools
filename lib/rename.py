@@ -1,5 +1,6 @@
 """
 Rename audio files to "Artist - Title.ext" using ID3/metadata tags.
+Skips frozen (done) tracks.
 """
 
 import re
@@ -10,6 +11,8 @@ try:
     from mutagen import File as MutagenFile
 except ImportError:
     MutagenFile = None
+
+from .freeze import is_done, mark_done
 
 AUDIO_EXTENSIONS = {".mp3", ".flac", ".m4a", ".wav", ".aac", ".ogg", ".alac", ".aiff"}
 
@@ -25,6 +28,7 @@ def _safe_filename(s: str) -> str:
 def _get_tags(filepath: Path):
     if MutagenFile is None:
         return None, None
+    f = None
     try:
         f = MutagenFile(str(filepath), easy=True)
         if f is None:
@@ -38,6 +42,12 @@ def _get_tags(filepath: Path):
         return artist, title
     except Exception:
         return None, None
+    finally:
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
 
 
 def rename_by_tags(master: Path, days: float | None = None) -> tuple[int, int]:
@@ -56,9 +66,12 @@ def rename_by_tags(master: Path, days: float | None = None) -> tuple[int, int]:
     else:
         print("Renaming files...")
 
-    renamed = skipped = 0
+    renamed = skipped = frozen_skip = 0
     for f in sorted(master.iterdir()):
         if not f.is_file() or f.suffix.lower() not in AUDIO_EXTENSIONS:
+            continue
+        if is_done(f, master):
+            frozen_skip += 1
             continue
         if cutoff and f.stat().st_mtime < cutoff:
             continue
@@ -75,10 +88,11 @@ def rename_by_tags(master: Path, days: float | None = None) -> tuple[int, int]:
             continue
         try:
             f.rename(new_path)
+            mark_done(new_path, master)
             print(f"  {f.name} -> {new_name}")
             renamed += 1
         except OSError as e:
             print(f"  ERROR renaming {f.name}: {e}")
 
-    print(f"Renamed: {renamed}  Skipped: {skipped}")
+    print(f"Renamed: {renamed}  Skipped: {skipped}  Frozen (untouched): {frozen_skip}")
     return renamed, skipped
