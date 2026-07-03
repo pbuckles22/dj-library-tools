@@ -8,8 +8,8 @@ Also maps every **public code surface** (`dj.py` CLI, `lib/` entry points used b
 
 | US ID | Status | Evidence |
 |-------|--------|----------|
-| US-CUT-01 | Built | auto: `tests/test_cuts.py`, `tests/test_cli_freeze_cuts.py` · manual: NAS apply |
-| US-CUT-02 | Built | auto: `tests/test_cuts.py`, `tests/test_cli_freeze_cuts.py` · manual: NAS apply + approval · `--mode strict` = internal only |
+| US-CUT-01 | Done | auto: `tests/test_cuts.py`, `tests/test_cli_freeze_cuts.py` · NAS: 522 renames |
+| US-CUT-02 | Done | auto: `tests/test_cuts.py` · NAS: 342 Clean-only deletes · policy: Intro Clean → delete Clean only · `--mode strict` = internal only |
 | US-PIPE-01 | Done | auto: `tests/test_newmusic.py`, `tests/test_cli_pipeline.py`, `tests/test_cli_commands.py` · manual: restart Serato |
 | US-TAG-01 | Done | auto: `tests/test_tag.py` · ops evidence in handoff |
 | US-SHAZ-01 | Backlog | auto: stage only (`tests/test_shazam_queue.py`) · manual: listen/tag batches |
@@ -72,7 +72,7 @@ Every US ID in product.md appears above. Backlog stories without code are listed
 | `relocate` / `--dry-run` | US-CLEAN-03 | |
 | `tag` / `--days` / `--full` / `--dry-run` / `--limit` | US-TAG-01 | |
 | `cuts standardize` | US-CUT-01 | |
-| `cuts dedupe` (default `--mode narrow`) | US-CUT-02 | Product policy |
+| `cuts dedupe` (default `--mode narrow`) | US-CUT-02 | Product policy: delete Clean only when Intro Clean exists |
 | `cuts dedupe --mode strict` | **internal** | Experimental; not product policy |
 | `cuts dedupe --apply` | US-CUT-02 | Default is dry-run report |
 | `compare` / `--md5` | US-OLD-02 | Reports feed US-OLD-01 manual review |

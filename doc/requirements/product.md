@@ -27,7 +27,7 @@
 
 | ID | Epic | Outcome | Priority | Status |
 |----|------|---------|----------|--------|
-| E01 | Cut policy | Consistent intro cut names; fewer redundant same-song versions | **Now** | Built — NAS run pending |
+| E01 | Cut policy | Consistent intro cut names; Clean removed when Intro Clean exists | **Now** | Done — NAS apply complete |
 | E02 | Daily ingest pipeline | New downloads flow NewMusic → Master → Serato with no manual steps | Ongoing | Done |
 | E03 | Metadata & tagging | Every club track tagged; Shazam queue cleared over time | Next | Partial |
 | E04 | Library quality | Master holds only club-grade audio; fakes and edge cases resolved | Next | Partial |
@@ -44,7 +44,7 @@
 
 ## E01 — Cut policy
 
-**Outcome:** Intro cut filenames use `(Intro Clean)` consistently; extra same-song cut variants removed only when a preferred intro family exists.
+**Outcome:** Intro cut filenames use `(Intro Clean)` consistently; when Intro Clean exists, the plain Clean cut is removed (Dirty, Acapella, and other variants stay).
 
 ### US-CUT-01 — Standardize intro aliases
 
@@ -53,7 +53,7 @@
 | Field | Value |
 |-------|-------|
 | Priority | **Now** |
-| Status | Built — NAS run pending |
+| Status | Done — NAS apply complete (522 renames) |
 | Risk | Low (rename only); see [RISKS.md](../../RISKS.md) |
 | Tests | `tests/test_cuts.py` |
 
@@ -62,9 +62,9 @@
 - [x] Dry-run reports renames without changing files (`test_standardize_dry_run_no_change`)
 - [x] Apply renames intro aliases to `(Intro Clean)` (`test_standardize_renames_intro_alias`)
 - [x] Already-canonical names are skipped (`test_standardize_skips_already_canonical`)
-- [ ] `python dj.py cuts standardize --full --dry-run` reviewed on NAS (~526 renames expected) — **manual**
-- [ ] `python dj.py cuts standardize --full` completed on NAS — **manual**
-- [ ] Spot-check: renamed files show `(Intro Clean)` in filename — **manual**
+- [x] `python dj.py cuts standardize --full --dry-run` reviewed on NAS — **manual**
+- [x] `python dj.py cuts standardize --full` completed on NAS (522 renames) — **manual**
+- [x] Spot-check: renamed files show `(Intro Clean)` in filename — **manual**
 - [x] No files deleted from Master during standardize (rename-only behavior)
 
 **Commands**
@@ -76,18 +76,18 @@ python dj.py cuts standardize --full
 
 ---
 
-### US-CUT-02 — Narrow dedupe (Intro Clean wins)
+### US-CUT-02 — Narrow dedupe (Intro Clean replaces Clean only)
 
-**As a** DJ library owner, **I want** redundant cut versions removed when an Intro Clean family exists **so that** Master holds one best intro variant per song, not every pool download.
+**As a** DJ library owner, **I want** the plain Clean cut removed when an Intro Clean exists **so that** Master does not keep both, while Dirty, Acapella, and other cuts stay.
 
 | Field | Value |
 |-------|-------|
 | Priority | **Now** |
-| Status | Built — user approval required before apply |
+| Status | Done — NAS apply complete (342 Clean deletes; policy: Clean only) |
 | Risk | **High** — deletes from Master; see [RISKS.md](../../RISKS.md) |
 | Tests | `tests/test_cuts.py` |
 
-**Policy:** Only removes extras when an Intro Clean family cut exists; keeps the best intro variant (~594 deletes expected per handoff 0003). Default `--mode narrow`.
+**Policy:** When an Intro Clean family cut exists for a song, delete only files tagged plain `(Clean)`. Keep Dirty, Acapella, Clean Extended, remix/edit, and other intro aliases. Default `--mode narrow`.
 
 **CLI note:** `--mode strict` (one file per song regardless of intro family) exists in code for experiments only — **not product policy**. Do not run on Master without an explicit new story.
 
@@ -95,14 +95,15 @@ python dj.py cuts standardize --full
 
 - [x] Dry-run writes report and keeps files (`test_dedupe_narrow_dry_run_keeps_files`)
 - [x] Report path is `Master/_meta/cut_dedup_report.txt`
-- [x] Apply deletes extras when Intro Clean family exists (`test_dedupe_narrow_apply_deletes_extras`)
+- [x] Apply deletes Clean when Intro Clean exists (`test_dedupe_narrow_apply_deletes_clean_only`)
+- [x] Dirty, Acapella, Clean Extended kept (`test_dedupe_narrow_keeps_dirty_acapella_and_other_cuts`)
 - [x] Groups without Intro Clean are left alone (`test_dedupe_narrow_no_intro_skips_group`)
 - [x] Default mode is `narrow` (product policy)
-- [ ] `python dj.py cuts dedupe --full` dry-run completed on NAS — **manual**
-- [ ] `Master/_meta/cut_dedup_report.txt` reviewed — **manual**
-- [ ] User explicitly approves apply — **manual**
-- [ ] `python dj.py cuts dedupe --full --apply` completed — **manual**
-- [ ] US-SYNC-02 completed afterward — **manual**
+- [x] `python dj.py cuts dedupe --full` dry-run completed on NAS — **manual**
+- [x] `Master/_meta/cut_dedup_report.txt` reviewed — **manual**
+- [x] User explicitly approves apply — **manual**
+- [x] `python dj.py cuts dedupe --full --apply` completed on NAS (342 deletes) — **manual**
+- [x] `sync serato` + `refresh` after apply — **manual** (Serato UI drive cleanup still open)
 
 **Commands**
 
@@ -626,9 +627,7 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 
 **Now**
 
-1. US-CUT-01 — `cuts standardize --full` (dry-run first) — **manual NAS**
-2. US-CUT-02 — `cuts dedupe --full` → review report → user-approved `--apply` — **manual NAS**
-3. US-SYNC-02 — Serato drive cleanup + analyze — **manual**
+1. US-SYNC-02 — Serato drive cleanup + analyze — **manual** (sync/refresh already run after cuts)
 
 **Next**
 

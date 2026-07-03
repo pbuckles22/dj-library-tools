@@ -2,7 +2,8 @@
 Standardize DJ pool cut tags in filenames and dedupe same-song alternate cuts.
 
 Intro aliases (Intro - Clean, DJcity Intro - Clean, …) → canonical Intro Clean.
-Narrow dedupe: when an intro-clean cut exists, drop other cuts for that song.
+Narrow dedupe: when an intro-clean cut exists, drop only the plain Clean cut.
+Dirty, Acapella, Clean Extended, and other variants are kept.
 """
 
 import re
@@ -235,8 +236,8 @@ def dedupe_cuts(
 ) -> tuple[int, int, Path]:
     """
     Remove alternate cuts when a preferred copy exists.
-    narrow: only when intro_clean family exists in the group.
-    strict: one file per song (intro_clean > clean > …).
+    narrow: when intro_clean exists, delete only plain Clean (not Dirty/Acap/etc.).
+    strict: one file per song (intro_clean > clean > …) — internal only.
     Returns (deleted_count, kept_count, report_path).
     """
     meta = master / "_meta"
@@ -250,7 +251,7 @@ def dedupe_cuts(
     to_delete: list[Path] = []
     lines = [
         f"Cut dedupe report ({mode}, {label})",
-        f"Policy: narrow = drop extras when Intro Clean family exists",
+        f"Policy: narrow = when Intro Clean exists, delete only Clean",
         "",
     ]
 
@@ -262,16 +263,16 @@ def dedupe_cuts(
             if not any(f["family"] == "intro_clean" for f in files):
                 continue
             keeper = _pick_intro_keeper(files)
+            extras = [f for f in files if f["family"] == "clean"]
         elif mode == "strict":
             keeper = _pick_keeper(files)
+            extras = [f for f in files if f["path"] != keeper["path"]]
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
-        extras = [f for f in files if f["path"] != keeper["path"]]
         if not extras:
             continue
 
-        artist, base = files[0]["artist"], files[0]["base"]
         lines.append(f"KEEP: {keeper['path'].name}")
         for f in extras:
             to_delete.append(f["path"])

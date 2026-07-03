@@ -48,7 +48,7 @@ On Windows, run from PowerShell or CMD with `python dj.py ...`
 | `python dj.py relocate` | Move WAV / Persian / comedy out of Master | US-CLEAN-03 |
 | `python dj.py shazam stage` | Move Shazam-queue files to `My Music/Shazam` | US-SHAZ-01 |
 | `python dj.py cuts standardize` | Intro aliases → `(Intro Clean)` | US-CUT-01 |
-| `python dj.py cuts dedupe` | Narrow cut dedupe (dry-run default; `--apply` deletes) | US-CUT-02 |
+| `python dj.py cuts dedupe` | When Intro Clean exists, delete Clean only (dry-run default; `--apply` deletes) | US-CUT-02 |
 | `python dj.py compare <dirs>` | Tag-based compare: old folders vs Master | US-OLD-02 |
 | `python dj.py compare --md5 <dirs>` | MD5-based compare (exact byte match) | US-OLD-02 |
 

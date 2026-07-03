@@ -97,8 +97,8 @@ def test_dedupe_narrow_dry_run_keeps_files(tmp_path):
     assert report.parent.name == "_meta"
 
 
-def test_dedupe_narrow_apply_deletes_extras(tmp_path):
-    """US-CUT-02: apply deletes extras when Intro Clean family exists."""
+def test_dedupe_narrow_apply_deletes_clean_only(tmp_path):
+    """US-CUT-02: apply deletes Clean when Intro Clean exists."""
     master = tmp_path / "Master"
     master.mkdir()
     keeper = master / f"Artist - Song ({CANONICAL_INTRO_CLEAN}).mp3"
@@ -112,6 +112,35 @@ def test_dedupe_narrow_apply_deletes_extras(tmp_path):
     assert kept == 0
     assert keeper.exists()
     assert not extra.exists()
+
+
+def test_dedupe_narrow_keeps_dirty_acapella_and_other_cuts(tmp_path):
+    """US-CUT-02: only Clean is deleted; Dirty, Acapella, etc. stay."""
+    master = tmp_path / "Master"
+    master.mkdir()
+    intro = master / f"Artist - Song ({CANONICAL_INTRO_CLEAN}).mp3"
+    clean = master / "Artist - Song (Clean).mp3"
+    dirty = master / "Artist - Song (Dirty).mp3"
+    acap = master / "Artist - Song (Acap - Clean).mp3"
+    extended = master / "Artist - Song (Clean Extended).mp3"
+    for p, body in (
+        (intro, b"i"),
+        (clean, b"c"),
+        (dirty, b"d"),
+        (acap, b"a"),
+        (extended, b"e"),
+    ):
+        p.write_bytes(body)
+
+    deleted, kept, _ = dedupe_cuts(master, mode="narrow", dry_run=False)
+
+    assert deleted == 1
+    assert kept == 0
+    assert intro.exists()
+    assert not clean.exists()
+    assert dirty.exists()
+    assert acap.exists()
+    assert extended.exists()
 
 
 def test_dedupe_narrow_no_intro_skips_group(tmp_path):

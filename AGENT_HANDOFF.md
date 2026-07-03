@@ -13,7 +13,7 @@
 >
 > Blackbox testing. TDD (TEST_TDD.md + tester skill: red → green before production changes).
 >
-> Read AGENT_HANDOFF.md and continue from recommended next steps. Prefer user/ops work (cuts on NAS, Serato cleanup) or backlog stories (US-SHAZ-02, US-QUAL-03, US-ENG-*). Do not re-do code→docs inventory unless a new public surface was added.
+> Read AGENT_HANDOFF.md and continue from recommended next steps. Prefer Serato UI cleanup (US-SYNC-02) or backlog stories (US-SHAZ-02, US-QUAL-03, US-ENG-*). Do not re-do code→docs inventory or re-apply cuts unless policy changes.
 
 **Handoff procedure always includes:** (1) **caveman** (`/caveman full`), (2) **TDD** (blackbox, test-first). See [.cursor/rules/handoff-checklist.mdc](.cursor/rules/handoff-checklist.mdc).
 
@@ -21,11 +21,11 @@
 
 ## Mission (read this)
 
-**Code → plan / requirements reconciliation is done.** Repo has a clean starting point: every public CLI / lib / scripts surface maps to a US ID or an explicit internal note in [doc/requirements/coverage.md](doc/requirements/coverage.md).
+**Cut policy on NAS is done.** US-CUT-01/02 applied; narrow policy is **Intro Clean exists → delete plain Clean only** (Dirty/Acap/etc. kept). Next is Serato UI cleanup.
 
 | Priority | Goal | Definition of done |
 |----------|------|--------------------|
-| **1** | **User / ops (manual)** | US-CUT-01/02 dry-run → review → user-approved apply on NAS; Serato drive cleanup |
+| **1** | **User / ops (manual)** | Serato drives: only `Latest Import`; remove missing; analyze all (US-SYNC-02) |
 | **2** | **Backlog only if asked** | US-SHAZ-02, US-QUAL-03, US-ENG-* — TDD first |
 | **3** | **Keep docs truthful** | Any new public surface gets a US (or internal note) in the same change |
 
@@ -36,7 +36,7 @@
 3. Prefer doc fixes over refactors. Do not expand product scope without a story.
 4. Merge-ready: `python -m pytest -q` (coverage optional: `--cov=lib --cov=dj`).
 
-**Not the mission:** Drive-by refactors, committing without the user asking, or re-auditing surfaces already in coverage.md.
+**Not the mission:** Drive-by refactors, committing without the user asking, re-auditing coverage.md, or re-running cuts apply.
 
 ---
 
@@ -58,8 +58,8 @@ Python CLI to manage the **Master** DJ music library on NAS (`buckles`) and sync
 
 | Item | Status |
 |------|--------|
-| `main` on GitHub | ✅ Requirements + coverage + code→docs reconciliation |
-| pytest Tier 1 | ✅ `python -m pytest -q` (152 passed, 1 skipped) |
+| `main` on GitHub | ✅ Cut policy (Clean-only narrow) + docs reconcile |
+| pytest Tier 1 | ✅ `python -m pytest -q` (153 passed, 1 skipped) |
 | Code coverage | ✅ **81%** `lib/` + `dj.py` |
 | Requirement matrix | ✅ [doc/requirements/coverage.md](doc/requirements/coverage.md) — every US + every public surface |
 | Plans / README | ✅ Serato-first; aligned with product.md |
@@ -70,14 +70,15 @@ Python CLI to manage the **Master** DJ music library on NAS (`buckles`) and sync
 
 | Item | Status |
 |------|--------|
-| Freeze lock | **5060 tracks** (`Master/_meta/frozen.json` + macOS xattr) |
+| Freeze lock | Manifest may lag after cuts (~4718 reported; re-freeze if lock count must match live files) |
 | Stable NAS path | `~/Music/DJ_Master_Link` → `/Volumes/buckles*` via `scripts/update-nas-link.sh` |
 | launchd auto-heal | `local.dj.nas-link` watches `/Volumes` |
 | Clash policy | Incoming NewMusic deleted on filename / frozen tag / MD5 clash |
 | Pipeline skips frozen | organize / rename / dedup never touch frozen tracks |
 | Gig USB | **exFAT**, volume **`DJ_USB`** → `/Volumes/DJ_USB` |
-| Serato local mirror | **~5059** tracks in `~/Music/_Serato_/Imported/Latest Import` |
+| Serato local mirror | **~4717** tracks in `~/Music/_Serato_/Imported/Latest Import` |
 | `refresh` default | `--target serato` |
+| Cut policy | US-CUT-01/02 applied; narrow = Intro Clean → delete Clean only |
 | Serato setup doc | [notes/SERATO_SETUP.md](notes/SERATO_SETUP.md) |
 
 ### Prior missions (done — do not re-do)
@@ -85,14 +86,16 @@ Python CLI to manage the **Master** DJ music library on NAS (`buckles`) and sync
 - Inbox promoted → E09–E12 in product.md
 - Blackbox tests for freeze, clash, sync/refresh, pipeline flags, NAS/USB config, cuts, CLI cmds
 - US IDs in test names/docstrings; pytest-cov
-- **Code → docs inventory:** CLI, lib entry points, scripts mapped in coverage.md; US-CLEAN-03 (relocate); pull/refresh/audit/pipeline flags documented; PM_PLAN / TODO / README Serato-first
+- **Code → docs inventory:** CLI, lib entry points, scripts mapped in coverage.md
+- **US-CUT-01/02 on NAS:** 522 renames; 342 Clean-only deletes; policy narrowed per user (not all cut variants)
 
 ### Gaps for next agent
 
 | Gap | Why it matters |
 |-----|----------------|
-| US-CUT-01/02 NAS apply | User-gated; CLI ready |
-| Serato drive cleanup | Manual UI steps |
+| Serato drive cleanup | Manual UI: only Latest Import; remove missing; analyze |
+| ~6 NAS unicode ghosts | Unreadable paths (NFC/NFD); refresh warns; fix by re-copy if needed |
+| Freeze manifest lag | Optional: re-freeze after cuts for accurate lock count |
 | Backlog stories | Only if user prioritizes (SHAZ-02, QUAL-03, ENG-*) |
 
 ---
@@ -124,14 +127,13 @@ Stable NAS access: ~/Music/DJ_Master_Link → /Volumes/buckles*
 
 ### A. User / ops (primary)
 
-1. **US-CUT-01** — `python dj.py cuts standardize --full --dry-run` then apply on NAS.
-2. **US-CUT-02** — `python dj.py cuts dedupe --full` → review report → user-approved `--apply`. Never `--mode strict` on Master.
-3. **US-SYNC-02** — Serato drives: only `Latest Import`; remove missing; analyze all; optional gig USB export.
+1. **US-SYNC-02** — Serato drives: only `Latest Import`; remove missing; analyze all; optional gig USB export. Restart Serato after last sync.
 
 ### B. Backlog (only if user asks)
 
-4. US-SHAZ-02 (`shazam import`), US-QUAL-03 (`audit transcodes`), US-ENG-* — **TDD first**.
-5. If adding a new CLI flag or script: update product.md + coverage.md in the same change.
+2. US-SHAZ-02 (`shazam import`), US-QUAL-03 (`audit transcodes`), US-ENG-* — **TDD first**.
+3. If adding a new CLI flag or script: update product.md + coverage.md in the same change.
+4. Optional: re-freeze Master if freeze counts must match live files; fix unicode ghost paths on NAS.
 
 ---
 

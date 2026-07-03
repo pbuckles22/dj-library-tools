@@ -506,12 +506,12 @@ def build_parser():
     p_cuts_std.add_argument("--dry-run", action="store_true")
     p_cuts_std.set_defaults(func=cmd_cuts)
     p_cuts_dd = p_cuts_sub.add_parser(
-        "dedupe", help="Remove alternate cuts when Intro Clean exists (narrow)"
+        "dedupe", help="When Intro Clean exists, delete plain Clean only (narrow)"
     )
     _add_days_full(p_cuts_dd)
     p_cuts_dd.add_argument(
         "--mode", choices=["narrow", "strict"], default="narrow",
-        help="narrow: only when intro cut exists (default)",
+        help="narrow: delete Clean only when intro exists (default)",
     )
     p_cuts_dd.add_argument(
         "--apply", action="store_true",

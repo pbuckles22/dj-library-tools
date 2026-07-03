@@ -7,7 +7,7 @@
 
 **Phase 3 — Cut policy on NAS + Serato ops** (July 2026)
 
-CLI and Tier-1 tests are Serato-first. Remaining work is **manual NAS apply** and Serato UI cleanup.
+CLI and Tier-1 tests are Serato-first. Cut policy applied on NAS. Remaining: **Serato UI cleanup**.
 
 - [x] `dj.py tag` (AcoustID); pipeline tag step — US-TAG-01
 - [x] NewMusic ingest + validated clear in pipeline — US-PIPE-01
@@ -16,8 +16,8 @@ CLI and Tier-1 tests are Serato-first. Remaining work is **manual NAS apply** an
 - [x] Serato primary sync + `refresh` default — US-SYNC-02
 - [x] Relocate / cleanup helpers — US-CLEAN-01, US-CLEAN-03
 - [x] Code → docs reconciliation (every public surface mapped)
-- [ ] **Cut standardize** on NAS — **US-CUT-01** (CLI ready; dry-run → apply)
-- [ ] **Cut dedupe narrow** on NAS — **US-CUT-02** (dry-run → user-approved `--apply`)
+- [x] **Cut standardize** on NAS — **US-CUT-01** (522 renames)
+- [x] **Cut dedupe narrow** on NAS — **US-CUT-02** (342 Clean-only deletes; Dirty/Acap kept)
 - [ ] Serato drive cleanup + analyze — **US-SYNC-02** manual
 - [ ] Shazam manual queue — **US-SHAZ-01**; legacy folder review — **US-CLEAN-02** ([TODO.md](TODO.md))
 
@@ -30,7 +30,7 @@ CLI and Tier-1 tests are Serato-first. Remaining work is **manual NAS apply** an
 ## Engineering (ongoing)
 
 - [x] Windows UTF-8 fixes
-- [x] Tier 1 tests: **152** passed, 1 skipped — US-ENG-06
+- [x] Tier 1 tests: **153** passed, 1 skipped — US-ENG-06
 - [x] ≥80% code coverage (`lib/` + `dj.py`) — US-ENG-09 (**81%**)
 - [x] Requirement matrix + code surface inventory — [coverage.md](doc/requirements/coverage.md)
 - [ ] Tier 2 pipeline integration tests — US-ENG-01
@@ -38,4 +38,4 @@ CLI and Tier-1 tests are Serato-first. Remaining work is **manual NAS apply** an
 
 ## Next
 
-See [doc/requirements/product.md](doc/requirements/product.md) (Now: US-CUT-01 → US-CUT-02 → US-SYNC-02 manual), [AGENT_HANDOFF.md](AGENT_HANDOFF.md), and [TODO.md](TODO.md).
+See [doc/requirements/product.md](doc/requirements/product.md) (Now: US-SYNC-02 Serato UI), [AGENT_HANDOFF.md](AGENT_HANDOFF.md), and [TODO.md](TODO.md).

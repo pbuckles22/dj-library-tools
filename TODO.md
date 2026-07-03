@@ -20,34 +20,15 @@
 
 ---
 
-## Cut policy — Now (US-CUT-01, US-CUT-02, US-SYNC-02)
+## Cut policy — Done (US-CUT-01, US-CUT-02)
 
-Run in order on NAS:
-
-- [ ] **US-CUT-01** Preview renames:
-  ```bash
-  python dj.py cuts standardize --full --dry-run
-  ```
-- [ ] **US-CUT-01** Apply (~526 intro alias → `(Intro Clean)`):
-  ```bash
-  python dj.py cuts standardize --full
-  ```
-- [ ] **US-CUT-02** Dry-run narrow dedupe (~594 deletes when Intro Clean exists):
-  ```bash
-  python dj.py cuts dedupe --full
-  ```
-- [ ] Review `Master/_meta/cut_dedup_report.txt` — user approves before apply
-- [ ] **US-CUT-02** Apply (only after approval):
-  ```bash
-  python dj.py cuts dedupe --full --apply
-  ```
-- [ ] **US-SYNC-02** Sync Serato and refresh local mirror:
-  ```bash
-  python dj.py sync serato
-  python dj.py refresh
-  ```
+- [x] **US-CUT-01** standardize on NAS (522 renames → `(Intro Clean)`)
+- [x] **US-CUT-02** narrow dedupe: when Intro Clean exists, delete **Clean only** (342 deletes; Dirty/Acap/etc. kept)
+- [x] `sync serato` + `refresh` after apply (~4717 local tracks)
 
 **Do not** run `cuts dedupe --mode strict` on Master (internal/experimental only).
+
+**Note:** Freeze manifest counts may lag after renames/deletes (`freeze status` vs live files). Re-freeze only if you need an accurate lock count.
 
 ---
 
