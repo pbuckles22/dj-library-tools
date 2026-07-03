@@ -173,6 +173,14 @@ Overrides: `config.local.json` (gitignored).
 
 ---
 
+## Git status (ready for next agent)
+
+- **Branch:** `main` — committed and pushed to `origin/main`
+- **Merge:** Serato-first Mac work + Phase 2 Windows/CI/agentic template (commit `7bd5c14` and parents)
+- **Working tree:** clean of library code; caveman skill is **global** (`~/.cursor/skills/caveman/`), not in this repo
+
+**Start a fresh agent with:** “Read AGENT_HANDOFF.md and continue from recommended next steps.”
+
 ## Recommended next steps (priority order)
 
 1. **Serato drive cleanup (user):** Settings → Library → Drives — remove `buckles` / old USB; only `Latest Import`. Remove missing tracks. Analyze all.

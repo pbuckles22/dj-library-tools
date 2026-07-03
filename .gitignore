@@ -40,6 +40,10 @@ doc/handoff/*-HANDOFF-*.md
 # Local config overrides (machine-specific paths)
 config.local.json
 
+# Project-local skills install debris (caveman lives in ~/.cursor/skills/)
+.agents/
+skills-lock.json
+
 # Generated runtime reports (not versioned)
 backup/
 *_compare_in_master.txt
