@@ -54,3 +54,47 @@ def test_apply_quality_tiers(tmp_path, monkeypatch):
     assert not delete_me.exists()
     assert (low / "mid.mp3").exists()
     assert keep_me.exists()
+
+
+def test_us_qual_01_audit_bitrates_tier_cleanup(tmp_path, monkeypatch):
+    """US-QUAL-01: audit_bitrates --tier-cleanup applies quality tiers."""
+    from lib.bitrate_audit import audit_bitrates
+
+    master = tmp_path / "Master"
+    master.mkdir()
+    (master / "_meta").mkdir()
+    low = master / "low.mp3"
+    mid = master / "mid.mp3"
+    high = master / "high.mp3"
+    low.write_bytes(b"a")
+    mid.write_bytes(b"b")
+    high.write_bytes(b"c")
+
+    kbps = {str(low): 128, str(mid): 192, str(high): 320}
+    monkeypatch.setattr("lib.bitrate_audit.get_bitrate", lambda p: kbps[str(p)] * 1000)
+
+    report = audit_bitrates(master, tier_cleanup=True, dry_run=False)
+
+    assert report.is_file()
+    assert not low.exists()
+    assert (tmp_path / "LowQuality" / "mid.mp3").exists()
+    assert high.exists()
+
+
+def test_us_qual_01_move_low_bitrate_to_shazam(tmp_path, monkeypatch):
+    """US-QUAL-01: <=128 kbps can move to Shazam."""
+    from lib.bitrate_audit import BitrateEntry, move_low_bitrate_to_shazam
+
+    master = tmp_path / "Master"
+    master.mkdir()
+    (master / "_meta").mkdir()
+    track = master / "weak.mp3"
+    track.write_bytes(b"x")
+
+    flagged = [BitrateEntry(path=track, kbps=128, tier="<=128")]
+    moved, errors = move_low_bitrate_to_shazam(master, flagged, dry_run=False)
+
+    assert errors == []
+    assert len(moved) == 1
+    assert (tmp_path / "Shazam" / "weak.mp3").exists()
+    assert not track.exists()

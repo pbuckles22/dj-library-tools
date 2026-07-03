@@ -2,21 +2,33 @@
 
 Two-tier test strategy for the DJ Library Tools Python CLI.
 
+**Requirement matrix:** [doc/requirements/coverage.md](doc/requirements/coverage.md) (100% of stories mapped to auto / manual / backlog).
+
 ---
 
 ## Tier 1: Fast feedback
 
-Unit tests for pure helpers in `lib/` — config path resolution, compare normalization, rename safe filenames, dedup hashing.
+Blackbox tests for public behavior in `lib/` + CLI (`dj.py`) — freeze, clash policy, cuts, sync/refresh, config paths, pipeline flags.
 
-```powershell
+```bash
 python -m pytest -q
 ```
 
 Install dev deps once:
 
-```powershell
+```bash
 pip install -r requirements-dev.txt
 ```
+
+### Code coverage (secondary mission)
+
+Target: **≥80%** line coverage on `lib/` + `dj.py` after requirement matrix is complete.
+
+```bash
+python -m pytest -q --cov=lib --cov=dj --cov-report=term-missing
+```
+
+Current (2026-07-03): **81%** total. Do not chase 100% line coverage.
 
 ---
 
@@ -24,7 +36,7 @@ pip install -r requirements-dev.txt
 
 Use when behavior spans real filesystem I/O, subprocess calls (robocopy/rsync), or mutagen tag reads on sample audio.
 
-```powershell
+```bash
 python -m pytest -q -m integration
 ```
 

@@ -1,10 +1,10 @@
 # Product backlog — DJ Library Tools
 
-**Persona:** DJ / library owner managing a club-grade Master library on NAS and mirroring to Rekordbox (Serato paused).
+**Persona:** DJ / library owner managing a club-grade Master library on NAS and mirroring to **Serato** (primary). Rekordbox is sunset / opt-in only.
 
-**Library snapshot (June 2026):** Master ~5,205 tracks · NewMusic 0 · LowQuality ~921 · Shazam ~2k manual queue · Rekordbox synced · 66 Tier 1 tests green.
+**Library snapshot (July 2026):** Master ~5,205 tracks (5060 frozen) · NewMusic 0 · LowQuality ~921 · Shazam ~2k manual queue · Serato local mirror ~5059 · Tier 1 tests green.
 
-**Related docs:** [PM_PLAN.md](../../PM_PLAN.md) (phases) · [TODO.md](../../TODO.md) (operational checklist) · [TECH_DEBT.md](../../TECH_DEBT.md) (engineering debt) · [RISKS.md](../../RISKS.md) (operational risks)
+**Related docs:** [PM_PLAN.md](../../PM_PLAN.md) (phases) · [TODO.md](../../TODO.md) (operational checklist) · [TECH_DEBT.md](../../TECH_DEBT.md) (engineering debt) · [RISKS.md](../../RISKS.md) (operational risks) · [coverage.md](coverage.md) (requirement → test matrix)
 
 ---
 
@@ -19,6 +19,8 @@
 
 **Status:** Done · Built (CLI ready; NAS run pending) · Backlog
 
+**Coverage rule:** Every acceptance criterion is **Done** with evidence, has an **automated Tier-1 test** (see [coverage.md](coverage.md)), or is an explicit **manual / Tier-2** checklist item. No orphan requirements.
+
 ---
 
 ## Epic overview
@@ -26,13 +28,17 @@
 | ID | Epic | Outcome | Priority | Status |
 |----|------|---------|----------|--------|
 | E01 | Cut policy | Consistent intro cut names; fewer redundant same-song versions | **Now** | Built — NAS run pending |
-| E02 | Daily ingest pipeline | New downloads flow NewMusic → Master → Rekordbox with no manual steps | Ongoing | Done |
+| E02 | Daily ingest pipeline | New downloads flow NewMusic → Master → Serato with no manual steps | Ongoing | Done |
 | E03 | Metadata & tagging | Every club track tagged; Shazam queue cleared over time | Next | Partial |
 | E04 | Library quality | Master holds only club-grade audio; fakes and edge cases resolved | Next | Partial |
 | E05 | My Music folder hygiene | Top-level My Music is only operational folders | Later | Partial |
 | E06 | Old NAS library review | Legacy folders reconciled; keepers identified | Later | Backlog |
-| E07 | DJ app sync | Local mirrors match Master after every material change | **Now** | Partial |
+| E07 | DJ app sync | Local Serato mirror matches Master after every material change | **Now** | Partial |
 | E08 | Engineering platform | Repo is testable, linted, and safe to extend | Parallel | Partial |
+| E09 | Freeze lock | Published Master tracks never altered by pipeline | **Now** | Done |
+| E10 | Clash policy | Incoming NewMusic never overwrites Master | **Now** | Done |
+| E11 | Stable NAS access | Config paths stay valid across NAS remounts | **Now** | Done |
+| E12 | Gig USB | CDJ export volume is never a library source | **Now** | Done |
 
 ---
 
@@ -49,17 +55,21 @@
 | Priority | **Now** |
 | Status | Built — NAS run pending |
 | Risk | Low (rename only); see [RISKS.md](../../RISKS.md) |
+| Tests | `tests/test_cuts.py` |
 
 **Acceptance criteria**
 
-- [ ] `python dj.py cuts standardize --full --dry-run` reviewed (~526 renames expected)
-- [ ] `python dj.py cuts standardize --full` completed on NAS
-- [ ] Spot-check: renamed files show `(Intro Clean)` in filename
-- [ ] No files deleted from Master
+- [x] Dry-run reports renames without changing files (`test_standardize_dry_run_no_change`)
+- [x] Apply renames intro aliases to `(Intro Clean)` (`test_standardize_renames_intro_alias`)
+- [x] Already-canonical names are skipped (`test_standardize_skips_already_canonical`)
+- [ ] `python dj.py cuts standardize --full --dry-run` reviewed on NAS (~526 renames expected) — **manual**
+- [ ] `python dj.py cuts standardize --full` completed on NAS — **manual**
+- [ ] Spot-check: renamed files show `(Intro Clean)` in filename — **manual**
+- [x] No files deleted from Master during standardize (rename-only behavior)
 
 **Commands**
 
-```powershell
+```bash
 python dj.py cuts standardize --full --dry-run
 python dj.py cuts standardize --full
 ```
@@ -75,22 +85,27 @@ python dj.py cuts standardize --full
 | Priority | **Now** |
 | Status | Built — user approval required before apply |
 | Risk | **High** — deletes from Master; see [RISKS.md](../../RISKS.md) |
+| Tests | `tests/test_cuts.py` |
 
 **Policy:** Only removes extras when an Intro Clean family cut exists; keeps the best intro variant (~594 deletes expected per handoff 0003).
 
 **Acceptance criteria**
 
-- [ ] `python dj.py cuts dedupe --full` dry-run completed
-- [ ] `Master\_meta\cut_dedup_report.txt` reviewed
-- [ ] User explicitly approves apply
-- [ ] `python dj.py cuts dedupe --full --apply` completed
-- [ ] US-SYNC-01 completed afterward
+- [x] Dry-run writes report and keeps files (`test_dedupe_narrow_dry_run_keeps_files`)
+- [x] Report path is `Master/_meta/cut_dedup_report.txt`
+- [x] Apply deletes extras when Intro Clean family exists (`test_dedupe_narrow_apply_deletes_extras`)
+- [x] Groups without Intro Clean are left alone (`test_dedupe_narrow_no_intro_skips_group`)
+- [ ] `python dj.py cuts dedupe --full` dry-run completed on NAS — **manual**
+- [ ] `Master/_meta/cut_dedup_report.txt` reviewed — **manual**
+- [ ] User explicitly approves apply — **manual**
+- [ ] `python dj.py cuts dedupe --full --apply` completed — **manual**
+- [ ] US-SYNC-02 completed afterward — **manual**
 
 **Commands**
 
-```powershell
+```bash
 python dj.py cuts dedupe --full
-# Review Master\_meta\cut_dedup_report.txt
+# Review Master/_meta/cut_dedup_report.txt
 python dj.py cuts dedupe --full --apply
 ```
 
@@ -100,7 +115,7 @@ python dj.py cuts dedupe --full --apply
 
 ## E02 — Daily ingest pipeline
 
-**Outcome:** Drop files in NewMusic; one command ingests, tags, renames, dedupes, syncs, and clears staging.
+**Outcome:** Drop files in NewMusic; one command ingests, tags, renames, dedupes, syncs Serato, and clears staging.
 
 ### US-PIPE-01 — NewMusic → Master pipeline
 
@@ -110,14 +125,17 @@ python dj.py cuts dedupe --full --apply
 |-------|-------|
 | Priority | Ongoing |
 | Status | Done |
+| Tests | `tests/test_newmusic.py`, `tests/test_cli_pipeline.py` |
 
 **Acceptance criteria**
 
-- [x] `python dj.py pipeline --no-serato` runs ingest → organize → tag → rename → dedup → Rekordbox sync → NewMusic clear
-- [x] NewMusic empty after successful run
-- [ ] Rekordbox restarted after sync (manual)
+- [x] Pipeline runs ingest → organize → tag → rename → dedup → Serato sync → NewMusic clear
+- [x] `--no-rekordbox` skips Rekordbox; Serato remains default sync target
+- [x] `--no-serato` skips Serato sync
+- [x] NewMusic empty after successful validated clear (`test_clear_staging_*`)
+- [ ] Serato restarted after sync (manual)
 
-**Commands:** See [TODO.md](../../TODO.md) — Daily section.
+**Commands:** See [TODO.md](../../TODO.md) — Daily section. Prefer `python dj.py pipeline --no-rekordbox`.
 
 ---
 
@@ -133,11 +151,13 @@ python dj.py cuts dedupe --full --apply
 |-------|-------|
 | Priority | Next |
 | Status | Done |
+| Tests | `tests/test_tag.py` |
 
 **Acceptance criteria**
 
 - [x] `python dj.py tag --full` run on Master
 - [x] Zero untagged files remaining in Master
+- [x] Dry-run does not write tags (`test_tag_files_dry_run_does_not_write`)
 
 ---
 
@@ -149,14 +169,16 @@ python dj.py cuts dedupe --full --apply
 |-------|-------|
 | Priority | Next |
 | Status | Backlog (~2k files) |
+| Tests | `tests/test_shazam_queue.py` (stage helper only) |
 
 **Policy:** Shazam or verified only — no auto-tag from filename alone.
 
 **Acceptance criteria**
 
-- [ ] Each batch: listen → tag → move to Master → `rename --full` → `sync rekordbox`
-- [ ] Queue file `Shazam\shazam_queue.txt` reflects progress
-- [ ] Shazam folder count trending down
+- [x] `python dj.py shazam stage` moves queue-listed files to Shazam folder (`test_stage_shazam_queue_*`)
+- [ ] Each batch: listen → tag → move to Master → `rename --full` → `sync serato` — **manual**
+- [ ] Queue file `Shazam/shazam_queue.txt` reflects progress — **manual**
+- [ ] Shazam folder count trending down — **manual**
 
 **Refs:** [TODO.md](../../TODO.md) — Shazam section.
 
@@ -186,12 +208,13 @@ python dj.py cuts dedupe --full --apply
 
 ### US-QUAL-01 — Bitrate tier cleanup
 
-**As a** DJ library owner, **I want** sub-club bitrates moved out of Master **so that** Rekordbox only sees gig-ready files.
+**As a** DJ library owner, **I want** sub-club bitrates moved out of Master **so that** Serato only sees gig-ready files.
 
 | Field | Value |
 |-------|-------|
 | Priority | Next |
 | Status | Done |
+| Tests | `tests/test_bitrate_audit.py` |
 
 **Acceptance criteria**
 
@@ -211,9 +234,9 @@ python dj.py cuts dedupe --full --apply
 
 **Acceptance criteria**
 
-- [ ] Each entry in `LowQuality\low_quality_manifest.txt` listened or decided
-- [ ] Re-buys moved to Master; rejects deleted
-- [ ] `dedup --full` and `sync rekordbox` after batch moves
+- [ ] Each entry in `LowQuality/low_quality_manifest.txt` listened or decided — **manual**
+- [ ] Re-buys moved to Master; rejects deleted — **manual**
+- [ ] `dedup --full` and `sync serato` after batch moves — **manual**
 
 ---
 
@@ -246,8 +269,8 @@ python dj.py cuts dedupe --full --apply
 
 **Acceptance criteria**
 
-- [ ] 1 file at 32 kHz sample rate fixed or removed
-- [ ] 4 mono files resolved (3× LMFAO dupes + 1 Goo Goo Dolls)
+- [ ] 1 file at 32 kHz sample rate fixed or removed — **manual**
+- [ ] 4 mono files resolved (3× LMFAO dupes + 1 Goo Goo Dolls) — **manual**
 
 ---
 
@@ -280,10 +303,10 @@ python dj.py cuts dedupe --full --apply
 
 **Acceptance criteria**
 
-- [ ] `Master\_meta\cleanup_report.txt` reviewed
-- [ ] iTunes (~1,319 files) and letter folders compared vs Master
-- [ ] Dupes deleted; personal tracks relocated or kept by user decision
-- [ ] User sign-off before deleting remaining legacy folders
+- [ ] `Master/_meta/cleanup_report.txt` reviewed — **manual**
+- [ ] iTunes (~1,319 files) and letter folders compared vs Master — **manual**
+- [ ] Dupes deleted; personal tracks relocated or kept by user decision — **manual**
+- [ ] User sign-off before deleting remaining legacy folders — **manual**
 
 **Refs:** [TODO.md](../../TODO.md) — My Music folder cleanup.
 
@@ -305,9 +328,9 @@ python dj.py cuts dedupe --full --apply
 
 **Acceptance criteria**
 
-- [ ] `tag_compare_not_in_master.txt` reviewed file-by-file or by folder
-- [ ] Keepers moved or documented; deletes user-approved only
-- [ ] Optional: re-run `python dj.py compare` if reports stale
+- [ ] `tag_compare_not_in_master.txt` reviewed file-by-file or by folder — **manual**
+- [ ] Keepers moved or documented; deletes user-approved only — **manual**
+- [ ] Optional: re-run `python dj.py compare` if reports stale — **manual**
 
 **Refs:** [notes/DEDUP_OLD_LIBRARY.md](../../notes/DEDUP_OLD_LIBRARY.md)
 
@@ -319,48 +342,54 @@ python dj.py cuts dedupe --full --apply
 |-------|-------|
 | Priority | Later |
 | Status | Done |
+| Tests | `tests/test_compare.py` |
 
 **Acceptance criteria**
 
 - [x] 16,798 files matched Master and deleted from old folders
+- [x] Compare reports in-Master vs not-in-Master (`tests/test_compare.py`)
 
 ---
 
 ## E07 — DJ app sync
 
-**Outcome:** Rekordbox (and eventually Serato) local mirrors reflect Master after every material library change.
+**Outcome:** Serato local mirror reflects Master after every material library change. Rekordbox is opt-in legacy.
 
-### US-SYNC-01 — Rekordbox sync after cut ops
+### US-SYNC-01 — Rekordbox sync (legacy opt-in)
 
-**As a** DJ library owner, **I want** Rekordbox updated after cut standardize/dedupe **so that** my DJ library matches Master on disk.
-
-| Field | Value |
-|-------|-------|
-| Priority | **Now** |
-| Status | Backlog — run after E01 |
-
-**Acceptance criteria**
-
-- [ ] `python dj.py sync rekordbox` run after US-CUT-01 and US-CUT-02
-- [ ] Rekordbox restarted
-- [ ] Spot-check cut variants visible and correct in Rekordbox
-
----
-
-### US-SYNC-02 — Resume Serato sync
-
-**As a** DJ library owner, **I want** Serato mirror re-enabled **so that** both DJ apps stay in sync when I use Serato again.
+**As a** DJ library owner, **I want** Rekordbox updated when I still use it **so that** the legacy mirror matches Master.
 
 | Field | Value |
 |-------|-------|
 | Priority | Later |
-| Status | Paused |
+| Status | Built — opt-in only |
+| Tests | `tests/test_sync_refresh.py` |
 
 **Acceptance criteria**
 
-- [ ] Tags and Master stable (E01, E03 substantially complete)
-- [ ] `python dj.py sync serato` or full pipeline without `--no-serato`
-- [ ] Serato restarted; library spot-checked
+- [x] `python dj.py sync rekordbox` copies Master → configured Rekordbox path
+- [x] Pipeline skips Rekordbox when `--no-rekordbox`
+- [ ] Rekordbox restarted after live sync — **manual**
+
+---
+
+### US-SYNC-02 — Serato sync (primary)
+
+**As a** DJ library owner, **I want** Serato local mirror updated from Master **so that** I DJ from local files only (no NAS yellow triangles).
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_sync_refresh.py`, `tests/test_cli_pipeline.py` |
+
+**Acceptance criteria**
+
+- [x] `python dj.py sync serato` copies Master → `serato_latest_import`
+- [x] `python dj.py refresh` defaults to `--target serato`
+- [x] Refresh copies missing tracks into local mirror
+- [x] Pipeline includes Serato unless `--no-serato`
+- [ ] Serato drives: only `Latest Import`; analyze after sync — **manual** (see [notes/SERATO_SETUP.md](../../notes/SERATO_SETUP.md))
 
 ---
 
@@ -378,13 +407,134 @@ python dj.py cuts dedupe --full --apply
 | US-ENG-06 | Tier 1 test suite (lib + dj.py) | Parallel | Done | — |
 | US-ENG-07 | `dj.py shazam import` | Later | Backlog | #7 |
 | US-ENG-08 | `dj.py audit transcodes` | Later | Backlog | — |
+| US-ENG-09 | ≥80% code coverage (`lib/` + `dj.py`) | Parallel | Done (81%) | — |
 
 **US-ENG-06 acceptance criteria**
 
-- [x] `python -m pytest -q` — 66 tests green
+- [x] `python -m pytest -q` green
 - [x] CI on Python 3.10 / 3.12 / 3.13
+- [x] Requirement IDs mapped in [coverage.md](coverage.md)
 
 Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table provides story IDs for traceability.
+
+---
+
+## E09 — Freeze lock
+
+**Outcome:** Tracks published to Master are locked; organize / rename / dedup never alter them.
+
+*Promoted from inbox (gemini freeze-lock notes) and Serato-first architecture.*
+
+### US-FREEZE-01 — Mark and query frozen tracks
+
+**As a** DJ library owner, **I want** published tracks locked as done **so that** later pipeline runs never rename or delete them.
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_freeze.py` |
+
+**Acceptance criteria**
+
+- [x] `freeze mark` records path + sha256 in `Master/_meta/frozen.json`
+- [x] `freeze unmark` removes the lock
+- [x] `freeze status` reports frozen / total counts
+- [x] `freeze mark-all` freezes every audio file in Master root
+- [x] macOS may also set xattr `user.djtools.status=done` (best-effort)
+
+---
+
+### US-FREEZE-02 — Pipeline respects freeze
+
+**As a** DJ library owner, **I want** frozen tracks skipped by mutate steps **so that** Master published files stay sacred.
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_freeze.py` |
+
+**Acceptance criteria**
+
+- [x] Rename leaves frozen files untouched
+- [x] Organize leaves frozen non-audio untouched
+- [x] Dedup never deletes a frozen track (frozen wins keeper priority)
+
+---
+
+## E10 — Clash policy
+
+**Outcome:** On any clash between NewMusic and Master, incoming loses; Master is never overwritten.
+
+*Promoted from Serato-first clash policy / Master sacred rule.*
+
+### US-CLASH-01 — Incoming loses
+
+**As a** DJ library owner, **I want** conflicting NewMusic imports rejected **so that** published Master tracks are never altered by new downloads.
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_staging_clash.py` |
+
+**Acceptance criteria**
+
+- [x] Filename exists in Master → delete incoming, keep Master
+- [x] MD5 matches a frozen Master track → delete incoming
+- [x] Artist+Title matches a frozen Master track → delete incoming
+- [x] Rejections append to `Master/_meta/rejected_imports.log`
+- [x] Non-clashing files move into Master
+
+---
+
+## E11 — Stable NAS access
+
+**Outcome:** Tools and Lexicon always use a stable symlink path, not a shifting `/Volumes/buckles*`.
+
+*Promoted from inbox `master-pool-symlink.sh` / launchd template → `scripts/update-nas-link.sh`.*
+
+### US-NAS-01 — DJ_Master_Link resolution
+
+**As a** DJ library owner, **I want** Master paths resolved via `~/Music/DJ_Master_Link` **so that** remounts do not break config.
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_config.py` |
+
+**Acceptance criteria**
+
+- [x] Config resolves `nas_link`, `master`, `newmusic`, `lexicon_root`, `serato_latest_import`, `gig_usb`
+- [x] `require_master` invokes NAS link refresh on macOS before path checks
+- [x] `scripts/update-nas-link.sh` creates `~/Music/DJ_Master_Link` → mounted `buckles*`
+- [ ] launchd `local.dj.nas-link` watches `/Volumes` on this Mac — **manual / machine setup**
+
+---
+
+## E12 — Gig USB
+
+**Outcome:** Gig stick is Serato export only; never a library source.
+
+*Promoted from Serato/USB setup notes.*
+
+### US-USB-01 — Export-only volume
+
+**As a** DJ library owner, **I want** the gig USB configured as export-only **so that** Serato never treats the stick as the music library.
+
+| Field | Value |
+|-------|-------|
+| Priority | **Now** |
+| Status | Done |
+| Tests | `tests/test_config.py` |
+
+**Acceptance criteria**
+
+- [x] Config exposes `gig_usb` as `/Volumes/DJ_USB` on Mac
+- [x] Serato library path is `serato_latest_import` (local), not `gig_usb`
+- [ ] Volume labeled `DJ_USB` (exFAT) used only for Serato export — **manual**
 
 ---
 
@@ -397,7 +547,12 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 | US-TAG-01 | AcoustID full sweep — 0 untagged in Master |
 | US-QUAL-01 | Bitrate tier cleanup complete |
 | US-CLEAN-01 | Junk/empty cleanup under My Music |
-| US-ENG-06 | 66 Tier 1 tests; CI; SDD pre-commit gate |
+| US-ENG-06 | Tier 1 tests; CI; SDD pre-commit gate |
+| US-FREEZE-01/02 | Freeze lock + pipeline respect |
+| US-CLASH-01 | Incoming loses on clash |
+| US-NAS-01 | Stable NAS link resolution |
+| US-USB-01 | Gig USB export-only config |
+| US-SYNC-02 | Serato primary sync + refresh default |
 | — | `dj.py` helpers: relocate, cleanup, audit bitrates, shazam stage, compare |
 
 ---
@@ -406,21 +561,22 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 
 **Now**
 
-1. US-CUT-01 — `cuts standardize --full` (dry-run first)
-2. US-CUT-02 — `cuts dedupe --full` → review report → user-approved `--apply`
-3. US-SYNC-01 — `sync rekordbox` + restart Rekordbox
+1. US-CUT-01 — `cuts standardize --full` (dry-run first) — **manual NAS**
+2. US-CUT-02 — `cuts dedupe --full` → review report → user-approved `--apply` — **manual NAS**
+3. US-SYNC-02 — Serato drive cleanup + analyze — **manual**
 
 **Next**
 
 - US-SHAZ-01 — Shazam manual queue
 - US-QUAL-02 — LowQuality review
 - US-QUAL-04 — Master edge cases
+- US-ENG-09 — ≥80% code coverage
 
 **Later**
 
 - US-CLEAN-02 — legacy folder review
 - US-OLD-01 — not-in-Master report
-- US-SYNC-02 — Serato resume
+- US-SYNC-01 — Rekordbox opt-in
 - US-SHAZ-02, US-QUAL-03, US-ENG-* backlog
 
 **Ongoing**

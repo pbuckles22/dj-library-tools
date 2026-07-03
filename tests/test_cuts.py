@@ -1,4 +1,4 @@
-"""Tests for lib.cuts standardize and dedupe."""
+"""US-CUT-01 / US-CUT-02 — standardize intro aliases and narrow cut dedupe."""
 
 from pathlib import Path
 
@@ -37,6 +37,7 @@ def test_classify_cut_families():
 
 
 def test_standardize_renames_intro_alias(tmp_path):
+    """US-CUT-01: apply renames intro aliases to (Intro Clean)."""
     master = tmp_path / "Master"
     master.mkdir()
     src = master / "Artist - Song (Intro - Clean).mp3"
@@ -52,6 +53,7 @@ def test_standardize_renames_intro_alias(tmp_path):
 
 
 def test_standardize_skips_already_canonical(tmp_path):
+    """US-CUT-01: already-canonical names are skipped."""
     master = tmp_path / "Master"
     master.mkdir()
     f = master / f"Artist - Song ({CANONICAL_INTRO_CLEAN}).mp3"
@@ -64,6 +66,7 @@ def test_standardize_skips_already_canonical(tmp_path):
 
 
 def test_standardize_dry_run_no_change(tmp_path):
+    """US-CUT-01: dry-run reports renames without changing files."""
     master = tmp_path / "Master"
     master.mkdir()
     src = master / "Artist - Song (DJcity Intro - Clean).mp3"
@@ -77,6 +80,7 @@ def test_standardize_dry_run_no_change(tmp_path):
 
 
 def test_dedupe_narrow_dry_run_keeps_files(tmp_path):
+    """US-CUT-02: dry-run writes report and keeps files."""
     master = tmp_path / "Master"
     master.mkdir()
     (master / f"Artist - Song ({CANONICAL_INTRO_CLEAN}).mp3").write_bytes(b"a")
@@ -89,9 +93,12 @@ def test_dedupe_narrow_dry_run_keeps_files(tmp_path):
     audio = [p for p in master.iterdir() if p.suffix.lower() in AUDIO_EXTENSIONS]
     assert len(audio) == 2
     assert report.exists()
+    assert report.name == "cut_dedup_report.txt"
+    assert report.parent.name == "_meta"
 
 
 def test_dedupe_narrow_apply_deletes_extras(tmp_path):
+    """US-CUT-02: apply deletes extras when Intro Clean family exists."""
     master = tmp_path / "Master"
     master.mkdir()
     keeper = master / f"Artist - Song ({CANONICAL_INTRO_CLEAN}).mp3"
@@ -108,6 +115,7 @@ def test_dedupe_narrow_apply_deletes_extras(tmp_path):
 
 
 def test_dedupe_narrow_no_intro_skips_group(tmp_path):
+    """US-CUT-02: groups without Intro Clean are left alone."""
     master = tmp_path / "Master"
     master.mkdir()
     (master / "Artist - Song (Clean).mp3").write_bytes(b"a")

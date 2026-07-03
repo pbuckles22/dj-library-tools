@@ -134,7 +134,42 @@ def test_ingest_skips_via_hash_lib_without_scanning_master(tmp_path, monkeypatch
     assert str(master / "On Disk.mp3") not in scanned
 
 
+def test_ingest_unique_dest_on_name_collision(tmp_path):
+    master = tmp_path / "Master"
+    newmusic = tmp_path / "NewMusic"
+    master.mkdir()
+    newmusic.mkdir()
+    (master / "track.mp3").write_bytes(b"existing")
+    (newmusic / "track.mp3").write_bytes(b"incoming-different")
+
+    copied, skipped = ingest(master, newmusic)
+
+    assert copied == 1
+    assert skipped == 0
+    assert (master / "track (1).mp3").read_bytes() == b"incoming-different"
+
+
+def test_clear_staging_prunes_empty_subdirs(tmp_path):
+    master = tmp_path / "Master"
+    newmusic = tmp_path / "NewMusic"
+    master.mkdir()
+    (master / "_meta").mkdir()
+    sub = newmusic / "empty-nested"
+    sub.mkdir(parents=True)
+    content = b"shared"
+    master_file = master / "a.mp3"
+    master_file.write_bytes(content)
+    staging = newmusic / "a.mp3"
+    staging.write_bytes(content)
+    md5 = get_md5(str(master_file))
+    save_hash_lib(master / "_meta", {md5: {"path": str(master_file), "bitrate": 320000}})
+
+    clear_staging(master, newmusic)
+    assert not sub.exists()
+
+
 def test_clear_staging_uses_hash_lib_then_falls_back_to_master_scan(tmp_path):
+
     master = tmp_path / "Master"
     newmusic = tmp_path / "NewMusic"
     master.mkdir()

@@ -10,6 +10,15 @@ alwaysApply: false
 
 When the user wants a handoff, or when you are writing or updating a handoff note:
 
+## Always include in every handoff (mandatory)
+
+Every handoff note **and** the tracked **AGENT_HANDOFF.md** start prompt / mission block **must** tell the next agent:
+
+1. **Caveman** — Start with `/caveman full` (or project default). Stay in caveman unless user says `stop caveman` / `normal mode`. Skill: `.agents/skills/caveman/SKILL.md` or `~/.cursor/skills/caveman/SKILL.md`.
+2. **TDD** — Blackbox, test-first per [TEST_TDD.md](.cursor/skills/TEST_TDD.md) and [tester](.cursor/skills/tester/SKILL.md): red → green at Tier 1 before production changes; merge-ready `python -m pytest -q` stays green.
+
+Put both in the **Start prompt for a fresh agent** block and in **Next up** / mission text. Do not omit.
+
 ## When to create a handoff (timing)
 
 - **Right time:** You are at a real stopping point: scope is done **or** you are intentionally handing off **mid-flight** with a clear label (e.g. **WIP**, **blocked**, **needs decision**).

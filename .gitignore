@@ -29,6 +29,7 @@ dist/
 build/
 out/
 coverage/
+.coverage
 .cache/
 
 # Local handoff notes (keep _template.md and README in repo)

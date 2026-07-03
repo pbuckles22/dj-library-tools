@@ -1,12 +1,14 @@
-# Relocated from MeowdokuHelper (2026-06-29)
+# Inbox — promoted
 
-These files were mistakenly added to the MeowdokuHelper repo (`doc/`).
-MeowdokuHelper is the iOS Star Battle solver only — DJ content belongs here.
+Contents from MeowdokuHelper were promoted into [doc/requirements/product.md](../requirements/product.md):
 
-| File | Original MeowdokuHelper path |
-|------|------------------------------|
-| `gemini-integration-notes.md` | `doc/NewGeminiContext.md` |
-| `launchd-pathfix.plist.template` | `doc/USB.MD` |
-| `master-pool-symlink.sh` | `doc/USBSpecs.MD` |
+| Former inbox item | Requirement |
+|-------------------|-------------|
+| gemini freeze-lock notes | US-FREEZE-01, US-FREEZE-02 (E09) |
+| `master-pool-symlink.sh` | US-NAS-01 (E11) — live script: `scripts/update-nas-link.sh` |
+| launchd pathfix template | US-NAS-01 launchd note — live: `local.dj.nas-link` |
+| Serato / USB setup notes | US-SYNC-02 (E07), US-USB-01 (E12) |
 
-**Next:** Promote into `doc/requirements/` and backlog per dj-library-tools planning docs.
+Coverage matrix: [doc/requirements/coverage.md](../requirements/coverage.md).
+
+This folder is historical only; do not add new requirements here.

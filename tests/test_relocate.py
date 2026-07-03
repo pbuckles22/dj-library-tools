@@ -64,3 +64,29 @@ def test_relocate_dry_run_no_move(tmp_path):
     assert len(moved) == 1
     assert f.exists()
     assert not (dest / f.name).exists()
+
+
+def test_relocate_default_dest_is_parent(tmp_path):
+    music = tmp_path / "My Music"
+    master = music / "Master"
+    master.mkdir(parents=True)
+    (master / "mix.wav").write_bytes(b"wav")
+
+    moved, errors = relocate_from_master(master)
+    assert errors == []
+    assert len(moved) == 1
+    assert (music / "mix.wav").exists()
+
+
+def test_relocate_unique_dest(tmp_path):
+    master = tmp_path / "Master"
+    dest = tmp_path / "out"
+    master.mkdir()
+    dest.mkdir()
+    (master / "mix.wav").write_bytes(b"new")
+    (dest / "mix.wav").write_bytes(b"old")
+
+    moved, errors = relocate_from_master(master, dest=dest)
+    assert errors == []
+    assert (dest / "mix (1).wav").exists()
+

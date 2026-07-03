@@ -4,6 +4,14 @@
 
 **Before writing this note:** Run code review (code-reviewer skill), tech debt (tech-debt-evaluator skill), and your **tests/coverage** commands documented in AGENT_HANDOFF.md. Then fill the sections below.
 
+## Start prompt (mandatory — always include)
+
+> `/caveman full`
+>
+> Blackbox testing. TDD (TEST_TDD.md + tester skill: red → green before production changes).
+>
+> Read AGENT_HANDOFF.md and continue from recommended next steps.
+
 ## TL;DR (1–2 sentences)
 
 (Current state + the single most important thing the next agent must know.)
