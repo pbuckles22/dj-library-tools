@@ -31,7 +31,7 @@
 | E02 | Daily ingest pipeline | New downloads flow NewMusic → Master → Serato with no manual steps | Ongoing | Done |
 | E03 | Metadata & tagging | Every club track tagged; Shazam queue cleared over time | Next | Partial |
 | E04 | Library quality | Master holds only club-grade audio; fakes and edge cases resolved | Next | Partial |
-| E05 | My Music folder hygiene | Top-level My Music is only operational folders | Later | Partial |
+| E05 | My Music folder hygiene | Top-level My Music is only operational folders; non-DJ content relocated | Later | Partial |
 | E06 | Old NAS library review | Legacy folders reconciled; keepers identified | Later | Backlog |
 | E07 | DJ app sync | Local Serato mirror matches Master after every material change | **Now** | Partial |
 | E08 | Engineering platform | Repo is testable, linted, and safe to extend | Parallel | Partial |
@@ -87,7 +87,9 @@ python dj.py cuts standardize --full
 | Risk | **High** — deletes from Master; see [RISKS.md](../../RISKS.md) |
 | Tests | `tests/test_cuts.py` |
 
-**Policy:** Only removes extras when an Intro Clean family cut exists; keeps the best intro variant (~594 deletes expected per handoff 0003).
+**Policy:** Only removes extras when an Intro Clean family cut exists; keeps the best intro variant (~594 deletes expected per handoff 0003). Default `--mode narrow`.
+
+**CLI note:** `--mode strict` (one file per song regardless of intro family) exists in code for experiments only — **not product policy**. Do not run on Master without an explicit new story.
 
 **Acceptance criteria**
 
@@ -95,6 +97,7 @@ python dj.py cuts standardize --full
 - [x] Report path is `Master/_meta/cut_dedup_report.txt`
 - [x] Apply deletes extras when Intro Clean family exists (`test_dedupe_narrow_apply_deletes_extras`)
 - [x] Groups without Intro Clean are left alone (`test_dedupe_narrow_no_intro_skips_group`)
+- [x] Default mode is `narrow` (product policy)
 - [ ] `python dj.py cuts dedupe --full` dry-run completed on NAS — **manual**
 - [ ] `Master/_meta/cut_dedup_report.txt` reviewed — **manual**
 - [ ] User explicitly approves apply — **manual**
@@ -132,6 +135,11 @@ python dj.py cuts dedupe --full --apply
 - [x] Pipeline runs ingest → organize → tag → rename → dedup → Serato sync → NewMusic clear
 - [x] `--no-rekordbox` skips Rekordbox; Serato remains default sync target
 - [x] `--no-serato` skips Serato sync
+- [x] `--no-tag` skips AcoustID step
+- [x] `--no-newmusic` skips NewMusic ingest and staging clear
+- [x] `--from STEP` starts at `import` | `organize` | `tag` | `rename` | `dedup` | `sync` | `clear`
+- [x] `--days N` / `--full` scope organize, tag, rename, dedup steps (default last 1 day)
+- [x] Standalone `organize`, `rename`, `dedup` run the same steps as pipeline (MD5 hash-library dedup)
 - [x] NewMusic empty after successful validated clear (`test_clear_staging_*`)
 - [ ] Serato restarted after sync (manual)
 
@@ -158,6 +166,8 @@ python dj.py cuts dedupe --full --apply
 - [x] `python dj.py tag --full` run on Master
 - [x] Zero untagged files remaining in Master
 - [x] Dry-run does not write tags (`test_tag_files_dry_run_does_not_write`)
+- [x] `--days N` / `--full` scope which untagged files are considered
+- [x] `--limit N` processes at most N files (testing / batching)
 
 ---
 
@@ -218,8 +228,20 @@ python dj.py cuts dedupe --full --apply
 
 **Acceptance criteria**
 
-- [x] ≤128 kbps → Shazam; ≤160 kbps deleted; 161–192 kbps → LowQuality
+- [x] `python dj.py audit bitrates` writes a report (no moves by default)
+- [x] `--move-shazam` moves ≤128 kbps from Master → Shazam
+- [x] `--tier-cleanup` deletes ≤160 kbps; moves 161–192 kbps → LowQuality
+- [x] `--dry-run` previews moves/deletes without changing files
+- [x] ≤128 kbps → Shazam; ≤160 kbps deleted; 161–192 kbps → LowQuality (ops complete)
 - [x] Master ~5,205 tracks at ≥256 kbps
+
+**Commands**
+
+```bash
+python dj.py audit bitrates
+python dj.py audit bitrates --move-shazam --dry-run
+python dj.py audit bitrates --tier-cleanup --dry-run
+```
 
 ---
 
@@ -280,14 +302,47 @@ python dj.py cuts dedupe --full --apply
 
 ### US-CLEAN-01 — Junk and empty dir cleanup
 
+**As a** DJ library owner, **I want** junk files and empty dirs removed under My Music **so that** only operational folders remain.
+
 | Field | Value |
 |-------|-------|
 | Priority | Later |
 | Status | Done |
+| Tests | `tests/test_cleanup.py` |
 
 **Acceptance criteria**
 
-- [x] Junk, artwork, empty dirs removed (9,751 files, 5,436 dirs)
+- [x] `python dj.py cleanup` removes junk, artwork, and empty dirs under My Music
+- [x] `--dry-run` reports deletes without removing files
+- [x] Legacy folders that still contain audio are reported as fishy, not auto-deleted
+- [x] Junk, artwork, empty dirs removed on NAS (9,751 files, 5,436 dirs) — **ops evidence**
+
+---
+
+### US-CLEAN-03 — Relocate non-DJ Master content
+
+**As a** DJ library owner, **I want** WAV, Persian/regional, and comedy files moved out of Master **so that** the flat DJ library holds only club tracks.
+
+| Field | Value |
+|-------|-------|
+| Priority | Later |
+| Status | Done |
+| Tests | `tests/test_relocate.py`, `tests/test_cli_commands.py` |
+
+**Acceptance criteria**
+
+- [x] `python dj.py relocate` classifies WAV / Persian-keyword / comedy-keyword files
+- [x] Matching files move from Master root to parent (`My Music/`)
+- [x] DJ tracks (no match) stay in Master
+- [x] `--dry-run` previews moves without relocating files
+- [x] Name collisions get a unique destination (`stem (N).ext`)
+
+**Commands**
+
+```bash
+python dj.py relocate --dry-run
+python dj.py relocate
+```
 
 ---
 
@@ -363,12 +418,17 @@ python dj.py cuts dedupe --full --apply
 |-------|-------|
 | Priority | Later |
 | Status | Built — opt-in only |
-| Tests | `tests/test_sync_refresh.py` |
+| Tests | `tests/test_sync_refresh.py`, `tests/test_cli_commands.py` |
 
 **Acceptance criteria**
 
 - [x] `python dj.py sync rekordbox` copies Master → configured Rekordbox path
+- [x] `python dj.py sync all` includes Rekordbox and Serato
 - [x] Pipeline skips Rekordbox when `--no-rekordbox`
+- [x] `python dj.py pull` copies new/changed files NAS Master → local Rekordbox folder
+- [x] `pull --dry-run` previews without copying
+- [x] `pull --prune` also deletes local files no longer in Master
+- [x] `python dj.py refresh --target rekordbox` pull+verify for Rekordbox (opt-in)
 - [ ] Rekordbox restarted after live sync — **manual**
 
 ---
@@ -386,8 +446,9 @@ python dj.py cuts dedupe --full --apply
 **Acceptance criteria**
 
 - [x] `python dj.py sync serato` copies Master → `serato_latest_import`
+- [x] `python dj.py sync all` includes Serato
 - [x] `python dj.py refresh` defaults to `--target serato`
-- [x] Refresh copies missing tracks into local mirror
+- [x] Refresh copies missing tracks into local mirror (retries over flaky SMB; default `--retries 3`)
 - [x] Pipeline includes Serato unless `--no-serato`
 - [ ] Serato drives: only `Latest Import`; analyze after sync — **manual** (see [notes/SERATO_SETUP.md](../../notes/SERATO_SETUP.md))
 
@@ -510,7 +571,8 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 - [x] Config resolves `nas_link`, `master`, `newmusic`, `lexicon_root`, `serato_latest_import`, `gig_usb`
 - [x] `require_master` invokes NAS link refresh on macOS before path checks
 - [x] `scripts/update-nas-link.sh` creates `~/Music/DJ_Master_Link` → mounted `buckles*`
-- [ ] launchd `local.dj.nas-link` watches `/Volumes` on this Mac — **manual / machine setup**
+- [x] `scripts/install-nas-link-launchd.sh` + `scripts/launchd/local.dj.nas-link.plist` install the watcher
+- [ ] launchd `local.dj.nas-link` active on this Mac — **manual / machine setup**
 
 ---
 
@@ -542,18 +604,21 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 
 | Story | Summary |
 |-------|---------|
-| US-OLD-02 | 16,798 old-folder dupes deleted |
-| US-PIPE-01 | NewMusic pipeline with validated clear |
+| US-OLD-02 | 16,798 old-folder dupes deleted; `compare` / `--md5` |
+| US-PIPE-01 | NewMusic pipeline + flags + standalone organize/rename/dedup |
 | US-TAG-01 | AcoustID full sweep — 0 untagged in Master |
-| US-QUAL-01 | Bitrate tier cleanup complete |
+| US-QUAL-01 | Bitrate audit report / `--move-shazam` / `--tier-cleanup` |
 | US-CLEAN-01 | Junk/empty cleanup under My Music |
+| US-CLEAN-03 | Relocate WAV / Persian / comedy out of Master |
 | US-ENG-06 | Tier 1 tests; CI; SDD pre-commit gate |
+| US-ENG-09 | ≥80% code coverage (`lib/` + `dj.py`) |
 | US-FREEZE-01/02 | Freeze lock + pipeline respect |
 | US-CLASH-01 | Incoming loses on clash |
-| US-NAS-01 | Stable NAS link resolution |
+| US-NAS-01 | Stable NAS link resolution + launchd install scripts |
 | US-USB-01 | Gig USB export-only config |
-| US-SYNC-02 | Serato primary sync + refresh default |
-| — | `dj.py` helpers: relocate, cleanup, audit bitrates, shazam stage, compare |
+| US-SYNC-01 | Rekordbox opt-in: `sync` / `pull` / `refresh --target rekordbox` |
+| US-SYNC-02 | Serato primary: `sync serato` / `refresh` default |
+| US-SHAZ-01 | `shazam stage` helper (manual listen/tag backlog) |
 
 ---
 
@@ -567,18 +632,17 @@ Engineering items stay ranked in [TECH_DEBT.md](../../TECH_DEBT.md); this table 
 
 **Next**
 
-- US-SHAZ-01 — Shazam manual queue
+- US-SHAZ-01 — Shazam manual queue (listen/tag batches)
 - US-QUAL-02 — LowQuality review
 - US-QUAL-04 — Master edge cases
-- US-ENG-09 — ≥80% code coverage
 
 **Later**
 
 - US-CLEAN-02 — legacy folder review
 - US-OLD-01 — not-in-Master report
-- US-SYNC-01 — Rekordbox opt-in
+- US-SYNC-01 — Rekordbox live use (CLI already built)
 - US-SHAZ-02, US-QUAL-03, US-ENG-* backlog
 
 **Ongoing**
 
-- US-PIPE-01 — pipeline when NewMusic has files
+- US-PIPE-01 — pipeline when NewMusic has files (`--no-rekordbox` preferred)

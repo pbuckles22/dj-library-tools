@@ -13,7 +13,7 @@
 >
 > Blackbox testing. TDD (TEST_TDD.md + tester skill: red → green before production changes).
 >
-> Read AGENT_HANDOFF.md and continue from recommended next steps. Walk all code (`lib/`, `dj.py`, `scripts/`) and reconcile into plan + requirements so the repo has a clean starting point — no behavior that exists only in code.
+> Read AGENT_HANDOFF.md and continue from recommended next steps. Prefer user/ops work (cuts on NAS, Serato cleanup) or backlog stories (US-SHAZ-02, US-QUAL-03, US-ENG-*). Do not re-do code→docs inventory unless a new public surface was added.
 
 **Handoff procedure always includes:** (1) **caveman** (`/caveman full`), (2) **TDD** (blackbox, test-first). See [.cursor/rules/handoff-checklist.mdc](.cursor/rules/handoff-checklist.mdc).
 
@@ -21,25 +21,22 @@
 
 ## Mission (read this)
 
-**Reconcile code → plan / requirements (clean starting point).**
-
-Prior session finished requirement-matrix coverage and ≥80% line coverage. Next work is the **inverse audit**: every public behavior in code must appear in durable docs (product requirements, PM_PLAN, TEST_PLAN, coverage matrix). No “secret” CLI flags, policies, or scripts that only live in source.
+**Code → plan / requirements reconciliation is done.** Repo has a clean starting point: every public CLI / lib / scripts surface maps to a US ID or an explicit internal note in [doc/requirements/coverage.md](doc/requirements/coverage.md).
 
 | Priority | Goal | Definition of done |
 |----------|------|--------------------|
-| **1** | **Code → docs inventory** | Walk `dj.py` subcommands, `lib/*.py` public entry points, and `scripts/`. For each behavior: linked US ID in [doc/requirements/product.md](doc/requirements/product.md) **or** new story added **or** explicit “internal/no product surface” note. |
-| **2** | **Plans match reality** | [PM_PLAN.md](PM_PLAN.md), [TODO.md](TODO.md), [TEST_PLAN.md](TEST_PLAN.md), [README.md](README.md) Serato-first and consistent with product.md. No Rekordbox-primary leftovers. |
-| **3** | **Coverage matrix stays truthful** | [doc/requirements/coverage.md](doc/requirements/coverage.md) lists every US; tests still map to US IDs. Add stories/tests only via **TDD** (failing test first). |
+| **1** | **User / ops (manual)** | US-CUT-01/02 dry-run → review → user-approved apply on NAS; Serato drive cleanup |
+| **2** | **Backlog only if asked** | US-SHAZ-02, US-QUAL-03, US-ENG-* — TDD first |
+| **3** | **Keep docs truthful** | Any new public surface gets a US (or internal note) in the same change |
 
 **How to work:**
 
 1. `/caveman full` — stay in caveman unless user says stop.
 2. **TDD** — blackbox, outside-in; Tier 1 red → green before production edits ([TEST_TDD.md](.cursor/skills/TEST_TDD.md)).
-3. Inventory code first (CLI + lib public APIs + scripts), then patch requirements/plans — not the other way around this session.
-4. Prefer doc fixes over refactors. Do not expand product scope.
-5. Merge-ready: `python -m pytest -q` (coverage optional: `--cov=lib --cov=dj`).
+3. Prefer doc fixes over refactors. Do not expand product scope without a story.
+4. Merge-ready: `python -m pytest -q` (coverage optional: `--cov=lib --cov=dj`).
 
-**Not the mission:** NAS cut apply, Serato UI cleanup, drive-by refactors, or committing without the user asking.
+**Not the mission:** Drive-by refactors, committing without the user asking, or re-auditing surfaces already in coverage.md.
 
 ---
 
@@ -61,10 +58,11 @@ Python CLI to manage the **Master** DJ music library on NAS (`buckles`) and sync
 
 | Item | Status |
 |------|--------|
-| `main` on GitHub | ✅ Blackbox requirements + coverage mission shipped |
+| `main` on GitHub | ✅ Requirements + coverage + code→docs reconciliation |
 | pytest Tier 1 | ✅ `python -m pytest -q` (152 passed, 1 skipped) |
 | Code coverage | ✅ **81%** `lib/` + `dj.py` |
-| Requirement matrix | ✅ [doc/requirements/coverage.md](doc/requirements/coverage.md) — every US mapped auto/manual/backlog |
+| Requirement matrix | ✅ [doc/requirements/coverage.md](doc/requirements/coverage.md) — every US + every public surface |
+| Plans / README | ✅ Serato-first; aligned with product.md |
 | GitHub Actions CI | ✅ 3.10 / 3.12 / 3.13 |
 | AgenticTemplate skill pod + SDD (no PRs) | ✅ |
 
@@ -82,20 +80,20 @@ Python CLI to manage the **Master** DJ music library on NAS (`buckles`) and sync
 | `refresh` default | `--target serato` |
 | Serato setup doc | [notes/SERATO_SETUP.md](notes/SERATO_SETUP.md) |
 
-### Prior mission (done — do not re-do)
+### Prior missions (done — do not re-do)
 
 - Inbox promoted → E09–E12 in product.md
 - Blackbox tests for freeze, clash, sync/refresh, pipeline flags, NAS/USB config, cuts, CLI cmds
-- US IDs in test names/docstrings
-- pytest-cov in requirements-dev.txt
+- US IDs in test names/docstrings; pytest-cov
+- **Code → docs inventory:** CLI, lib entry points, scripts mapped in coverage.md; US-CLEAN-03 (relocate); pull/refresh/audit/pipeline flags documented; PM_PLAN / TODO / README Serato-first
 
-### Gaps for next agent (code → docs)
+### Gaps for next agent
 
 | Gap | Why it matters |
 |-----|----------------|
-| Not every `lib/` / `dj.py` surface audited against product.md | Behavior may exist only in code (relocate, audit flags, pull, compare outputs, etc.) |
-| PM_PLAN / TODO / README may still lag Serato-first | Clean starting point needs one story |
-| Manual NAS ops still open | US-CUT-01/02 apply, Serato drive cleanup — user, not agent-only |
+| US-CUT-01/02 NAS apply | User-gated; CLI ready |
+| Serato drive cleanup | Manual UI steps |
+| Backlog stories | Only if user prioritizes (SHAZ-02, QUAL-03, ENG-*) |
 
 ---
 
@@ -124,19 +122,16 @@ Stable NAS access: ~/Music/DJ_Master_Link → /Volumes/buckles*
 
 ## Recommended next steps (priority order)
 
-### A. Code → requirements / plan reconciliation (primary)
+### A. User / ops (primary)
 
-1. **Inventory CLI** — list every `dj.py` subcommand and flag from `build_parser()` / help text.
-2. **Inventory lib** — public functions used by CLI (and scripts under `scripts/`).
-3. **Diff vs product.md** — for each behavior: existing US ID, or add story, or mark internal-only in coverage.md.
-4. **Align plans** — update PM_PLAN.md, TODO.md, README.md, TEST_PLAN.md so Serato-first and stories match code.
-5. **TDD only if behavior missing** — if docs claim behavior code lacks, write failing blackbox test first, then implement.
+1. **US-CUT-01** — `python dj.py cuts standardize --full --dry-run` then apply on NAS.
+2. **US-CUT-02** — `python dj.py cuts dedupe --full` → review report → user-approved `--apply`. Never `--mode strict` on Master.
+3. **US-SYNC-02** — Serato drives: only `Latest Import`; remove missing; analyze all; optional gig USB export.
 
-### B. User / ops (parallel, not instead of A)
+### B. Backlog (only if user asks)
 
-6. **US-CUT-01/02 on NAS** — dry-run → review → user-approved apply.
-7. **Serato drive cleanup (user):** only `Latest Import`; remove missing; analyze all.
-8. Gig USB export after analyze.
+4. US-SHAZ-02 (`shazam import`), US-QUAL-03 (`audit transcodes`), US-ENG-* — **TDD first**.
+5. If adding a new CLI flag or script: update product.md + coverage.md in the same change.
 
 ---
 
@@ -212,7 +207,7 @@ See [TEST_PLAN.md](TEST_PLAN.md) and [.cursor/skills/TEST_TDD.md](.cursor/skills
 |-------|--------|--------|
 | Requirements (product.md + matrix) | **100% mapped** | Done |
 | Code (`lib/`, `dj.py`) | **≥80%** | Done (81%) |
-| Code → docs reconciliation | **100% of public surfaces** | **Next** |
+| Code → docs reconciliation | **100% of public surfaces** | **Done** |
 
 ---
 
@@ -246,6 +241,7 @@ gh run watch "$run" --exit-status
 - **Master is sacred.** Never delete Master tracks without explicit user approval.
 - **Frozen tracks:** never rename, organize, or delete via dedup.
 - **Clash policy:** incoming loses — delete from NewMusic, log to `Master/_meta/rejected_imports.log`.
+- **cuts `--mode strict`:** internal/experimental — not product policy.
 - **Do not commit:** `config.local.json`, `backup/`, `tag_compare_*`, `master_compare_*`, `.agents/`, `.coverage`
 - **Do not commit unless user asks.**
 
@@ -256,13 +252,13 @@ gh run watch "$run" --exit-status
 | File | Contents |
 |------|----------|
 | [doc/requirements/product.md](doc/requirements/product.md) | **Source of truth for requirement coverage** |
-| [doc/requirements/coverage.md](doc/requirements/coverage.md) | US ID → test / manual / backlog |
+| [doc/requirements/coverage.md](doc/requirements/coverage.md) | US ID → test / manual / backlog **+ code surface inventory** |
 | [TEST_PLAN.md](TEST_PLAN.md) | Tier 1 / Tier 2 |
-| [PM_PLAN.md](PM_PLAN.md) | Phase scope (may lag — reconcile) |
-| [TODO.md](TODO.md) | Operational checklist (may lag — reconcile) |
+| [PM_PLAN.md](PM_PLAN.md) | Phase scope |
+| [TODO.md](TODO.md) | Operational checklist (Serato-first) |
 | [TECH_DEBT.md](TECH_DEBT.md) | Engineering debt |
 | [RISKS.md](RISKS.md) | Operational risks |
 | [notes/WORKFLOW.md](notes/WORKFLOW.md) | Day-to-day pipeline |
 | [notes/SERATO_SETUP.md](notes/SERATO_SETUP.md) | Local-first Serato + DJ_USB |
 | [doc/inbox-from-meowdoku/](doc/inbox-from-meowdoku/) | Historical pointer only (promoted) |
-| [README.md](README.md) | CLI reference (may lag — reconcile) |
+| [README.md](README.md) | CLI reference (Serato-first) |
