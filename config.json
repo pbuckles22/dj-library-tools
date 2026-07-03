@@ -8,7 +8,8 @@
     "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/Master",
     "windows": "\\\\buckles\\My.Documents\\My Music\\Master"
   },
-  "new_music": {
+  "newmusic": {
+    "_comment": "Optional override in config.local.json only; default is Master/../NewMusic",
     "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/NewMusic",
     "windows": "\\\\buckles\\My.Documents\\My Music\\NewMusic"
   },
@@ -27,5 +28,7 @@
   "lexicon_root": {
     "mac":     "~/Music/DJ_Master_Link/My.Documents/My Music/Master",
     "windows": "\\\\buckles\\My.Documents\\My Music\\Master"
-  }
+  },
+  "acoustid_api_key": "",
+  "musicbrainz_app": "dj-library-tools/1.0 (mailto:you@example.com)"
 }

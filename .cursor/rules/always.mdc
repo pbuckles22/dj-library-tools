@@ -1,0 +1,26 @@
+---
+description: Project context — apply in every session
+alwaysApply: true
+---
+
+# DJ Library Tools
+
+Cross-platform Python CLI to manage the **Master** DJ music library on NAS and sync to Serato/Rekordbox.
+
+**Source of truth:** AGENT_HANDOFF.md, PM_PLAN.md, TEST_PLAN.md, TECH_DEBT.md, RISKS.md, RELEASE.md, INCIDENTS.md; `.cursor/skills/` (see [.cursor/skills/README.md](.cursor/skills/README.md)).
+
+**SDD — no PRs:** Pull requests are **not raised**. Pre-commit review is the **agent pod consensus** — see [.cursor/rules/pre-commit-gate.mdc](.cursor/rules/pre-commit-gate.mdc). Before commit: tester (pytest green) → code-reviewer → code-quality-gate → tech-debt-evaluator → security-reviewer when relevant.
+
+**Operating model:** green-and-clean (scope); context-bootstrapper (start/resume); session-summarizer (handoff).
+
+**TDD:** TEST_TDD.md + tester skill; Tier 1 = `python -m pytest -q`.
+
+**Merge-ready:** `python -m pytest -q` — run before commit; same gate as CI.
+
+**Git:** github-feature-workflow skill — feature branch → pod consensus → commit → merge/push to `main` (no PR).
+
+**Safety:** Master is source of truth. Never delete from Master without explicit user approval.
+
+**Handoff:** handoff-checklist.mdc when user wants a handoff.
+
+**Upstream:** Tracks [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate) — `git fetch upstream && git merge upstream/main` for shared skills/rules.

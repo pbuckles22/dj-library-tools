@@ -3,12 +3,13 @@
 DJ Library Tools — cross-platform CLI.
 
 Usage:
-  python dj.py pipeline              # import NewMusic → organize → rename → dedup → Rekordbox (last 24h)
+  python dj.py pipeline              # newmusic → organize → tag → rename → dedup → sync → clear NewMusic
   python dj.py pipeline --full       # full library scan
   python dj.py pipeline --days 3     # last 3 days
-  python dj.py pipeline --serato     # also sync Serato
-  python dj.py pipeline --from sync  # skip to Rekordbox sync only
+  python dj.py pipeline --from sync  # skip to sync only
+  python dj.py pipeline --no-serato
   python dj.py pipeline --no-rekordbox
+  python dj.py pipeline --no-tag
 
   python dj.py organize              # move non-audio files to _meta
   python dj.py rename                # rename to "Artist - Title.ext"
@@ -32,6 +33,16 @@ Usage:
 
   python dj.py compare <dir> [dir2 ...]          # tag-based compare (default)
   python dj.py compare --md5 <dir> [dir2 ...]    # MD5-based compare
+
+  python dj.py tag                   # AcoustID tag untagged files (last 24h)
+  python dj.py tag --full            # tag all untagged in Master
+  python dj.py tag --dry-run         # preview matches without writing
+
+  python dj.py shazam stage          # move Shazam-queue files to My Music/Shazam
+
+  python dj.py cuts standardize --full   # intro aliases -> Intro Clean
+  python dj.py cuts dedupe --full          # dry-run narrow dedupe report
+  python dj.py cuts dedupe --full --apply  # delete extras (after review)
 """
 
 import argparse
@@ -47,13 +58,20 @@ from lib import sync as sync_mod
 from lib import compare as compare_mod
 from lib import staging as staging_mod
 from lib import freeze as freeze_mod
+from lib import newmusic as newmusic_mod
+from lib import tag as tag_mod
+from lib import relocate as relocate_mod
+from lib import shazam_queue as shazam_mod
+from lib import bitrate_audit as bitrate_mod
+from lib import cleanup as cleanup_mod
+from lib import cuts as cuts_mod
 
 
 # ---------------------------------------------------------------------------
 # Subcommands
 # ---------------------------------------------------------------------------
 
-PIPELINE_STEPS = ("import", "organize", "rename", "dedup", "sync")
+PIPELINE_STEPS = ("import", "organize", "tag", "rename", "dedup", "sync", "clear")
 
 
 def _from_step_index(from_step: str) -> int:
@@ -68,6 +86,7 @@ def cmd_pipeline(args):
     master = cfg.require_master()
     meta   = master / "_meta"
     meta.mkdir(exist_ok=True)
+    newmusic = cfg.get_newmusic()
 
     days      = None if args.full else args.days
     full      = args.full
@@ -80,17 +99,23 @@ def cmd_pipeline(args):
 
     step = 0
     total = sum([
-        from_idx <= PIPELINE_STEPS.index("import") and not args.no_import,
+        from_idx <= PIPELINE_STEPS.index("import") and not args.no_newmusic,
         from_idx <= PIPELINE_STEPS.index("organize"),
+        from_idx <= PIPELINE_STEPS.index("tag") and not args.no_tag,
         from_idx <= PIPELINE_STEPS.index("rename"),
         from_idx <= PIPELINE_STEPS.index("dedup"),
-        from_idx <= PIPELINE_STEPS.index("sync") and (args.serato or not args.no_rekordbox),
+        from_idx <= PIPELINE_STEPS.index("sync") and not args.no_serato,
+        from_idx <= PIPELINE_STEPS.index("sync") and not args.no_rekordbox,
+        from_idx <= PIPELINE_STEPS.index("clear") and not args.no_newmusic,
     ])
 
-    if from_idx <= PIPELINE_STEPS.index("import") and not args.no_import:
+    if from_idx <= PIPELINE_STEPS.index("import") and not args.no_newmusic:
         step += 1
         print(f"\n[{step}/{total}] Importing NewMusic → Master...")
-        staging_mod.import_new_music(cfg.get_new_music(), master)
+        # Freeze-aware clash policy: Master wins; delete incoming on clash.
+        staging_mod.import_new_music(newmusic, master)
+        # Also copy any remaining (subfolder) files via MD5 ingest.
+        newmusic_mod.ingest(master, newmusic)
     elif from_idx <= PIPELINE_STEPS.index("import"):
         print("\n  NewMusic import skipped.")
 
@@ -98,6 +123,21 @@ def cmd_pipeline(args):
         step += 1
         print(f"\n[{step}/{total}] Organizing...")
         organize_mod.organize(master, days=None if full else days)
+
+    if from_idx <= PIPELINE_STEPS.index("tag") and not args.no_tag:
+        step += 1
+        print(f"\n[{step}/{total}] Tagging (AcoustID)...")
+        api_key = cfg.get_acoustid_key()
+        if api_key:
+            tag_mod.tag_files(
+                master,
+                api_key,
+                days=None if full else days,
+            )
+        else:
+            print("  Skipped — acoustid_api_key not set in config.local.json")
+    elif from_idx <= PIPELINE_STEPS.index("tag"):
+        print("\n  Tagging skipped.")
 
     if from_idx <= PIPELINE_STEPS.index("rename"):
         step += 1
@@ -122,20 +162,29 @@ def cmd_pipeline(args):
                 subprocess.run(["bash", str(del_script)])
 
     if from_idx <= PIPELINE_STEPS.index("sync"):
-        if args.serato:
+        if not args.no_serato:
             step += 1
             print(f"\n[{step}/{total}] Syncing → Serato...")
             sync_mod.sync_serato(master, cfg.get_serato())
+        else:
+            print("\n  Serato sync skipped.")
+
         if not args.no_rekordbox:
             step += 1
             print(f"\n[{step}/{total}] Syncing → Rekordbox...")
             sync_mod.sync_rekordbox(master, cfg.get_rekordbox())
-        elif not args.serato:
-            print("\n  Sync skipped (use --serato and/or drop --no-rekordbox).")
+        else:
+            print("\n  Rekordbox sync skipped.")
+
+    if from_idx <= PIPELINE_STEPS.index("clear") and not args.no_newmusic:
+        step += 1
+        print(f"\n[{step}/{total}] Clearing NewMusic staging...")
+        hash_lib = dedup_mod.load_hash_lib(meta)
+        newmusic_mod.clear_staging(master, newmusic, hash_lib=hash_lib)
 
     print("\n" + "=" * 50)
     parts = []
-    if args.serato:              parts.append("Serato")
+    if not args.no_serato:       parts.append("Serato")
     if not args.no_rekordbox:    parts.append("Rekordbox")
     if parts and from_idx <= PIPELINE_STEPS.index("sync"):
         print(f"  Done. Restart {' and '.join(parts)}.")
@@ -221,6 +270,74 @@ def cmd_freeze(args):
                 print(f"  FAILED: {path}")
 
 
+def cmd_audit(args):
+    master = cfg.require_master()
+    bitrate_mod.audit_bitrates(
+        master,
+        move_shazam=args.move_shazam,
+        tier_cleanup=args.tier_cleanup,
+        dry_run=args.dry_run,
+    )
+
+
+def cmd_cleanup(args):
+    music = cfg.get_master().parent
+    cleanup_mod.clean_my_music(music, dry_run=args.dry_run)
+
+
+def cmd_shazam(args):
+    master = cfg.require_master()
+    if args.action == "stage":
+        dest = shazam_mod.default_shazam_dir(master)
+        shazam_mod.stage_shazam_queue(master, dest=dest, dry_run=args.dry_run)
+    else:
+        print(f"Unknown shazam action: {args.action}")
+        sys.exit(1)
+
+
+def cmd_relocate(args):
+    master = cfg.require_master()
+    dest = master.parent
+    print(f"Relocating WAV / Persian / comedy from Master -> {dest}")
+    if args.dry_run:
+        print("  DRY RUN — no files will be moved.")
+    moved, errors = relocate_mod.relocate_from_master(
+        master, dest=dest, dry_run=args.dry_run
+    )
+    print(f"\n{'Would move' if args.dry_run else 'Moved'}: {len(moved)}  Errors: {len(errors)}")
+
+
+def cmd_tag(args):
+    master = cfg.require_master()
+    api_key = cfg.require_acoustid_key()
+    days = args.days if not args.full else None
+    tag_mod.tag_files(
+        master,
+        api_key,
+        days=days,
+        dry_run=args.dry_run,
+        limit=args.limit,
+    )
+
+
+def cmd_cuts(args):
+    master = cfg.require_master()
+    if args.action == "standardize":
+        days = args.days if not args.full else None
+        cuts_mod.standardize_cuts(master, days=days, dry_run=args.dry_run)
+    elif args.action == "dedupe":
+        days = args.days if not args.full else None
+        cuts_mod.dedupe_cuts(
+            master,
+            mode=args.mode,
+            days=days,
+            dry_run=not args.apply,
+        )
+    else:
+        print(f"Unknown cuts action: {args.action}")
+        sys.exit(1)
+
+
 def cmd_compare(args):
     master = cfg.require_master()
     if not args.dirs:
@@ -237,8 +354,8 @@ def cmd_compare(args):
 ========================================
   Compare ({mode}) complete
 ========================================
-  In Master:      {len(in_m)}   ← safe to delete
-  Not in Master:  {len(not_in_m)}   ← REVIEW
+  In Master:      {len(in_m)}   (safe to delete from OLD folders)
+  Not in Master:  {len(not_in_m)}   (REVIEW)
 
 Reports written to project folder.
 Run the generated delete script when ready.
@@ -267,18 +384,18 @@ def build_parser():
     sub = parser.add_subparsers(dest="command", required=True)
 
     # pipeline
-    p_pipe = sub.add_parser("pipeline", help="Full pipeline: import→organize→rename→dedup→sync")
+    p_pipe = sub.add_parser("pipeline", help="Full pipeline: import→organize→tag→rename→dedup→sync→clear")
     _add_days_full(p_pipe)
     p_pipe.add_argument("--from", dest="from_step", default="import",
                         choices=list(PIPELINE_STEPS),
                         metavar="STEP",
-                        help="Start at STEP (import, organize, rename, dedup, sync)")
-    p_pipe.add_argument("--no-import",    action="store_true",
-                        help="Skip moving files from NewMusic into Master")
-    p_pipe.add_argument("--serato",       action="store_true",
-                        help="Also sync to Serato (off by default)")
-    p_pipe.add_argument("--no-rekordbox", action="store_true",
-                        help="Skip Rekordbox sync")
+                        help="Start at STEP (import, organize, tag, rename, dedup, sync, clear)")
+    p_pipe.add_argument("--no-serato",    action="store_true")
+    p_pipe.add_argument("--no-rekordbox", action="store_true")
+    p_pipe.add_argument("--no-newmusic",  action="store_true",
+                        help="Skip NewMusic ingest and staging clear")
+    p_pipe.add_argument("--no-tag", action="store_true",
+                        help="Skip AcoustID tagging step")
     p_pipe.set_defaults(func=cmd_pipeline)
 
     # organize
@@ -311,7 +428,7 @@ def build_parser():
                         help="Preview changes without copying")
     p_pull.set_defaults(func=cmd_pull)
 
-    # refresh — run before opening Rekordbox
+    # refresh — run before opening Serato
     p_refresh = sub.add_parser(
         "refresh",
         help="Pull NAS → local mirror; verify before opening Serato/Rekordbox")
@@ -335,6 +452,73 @@ def build_parser():
     p_fu.add_argument("paths", nargs="+")
     p_fu.set_defaults(func=cmd_freeze)
 
+    # audit
+    p_audit = sub.add_parser("audit", help="Library audit reports")
+    p_audit_sub = p_audit.add_subparsers(dest="audit_cmd", required=True)
+    p_br = p_audit_sub.add_parser("bitrates", help="Report <=128 kbps; optional move to Shazam")
+    p_br.add_argument("--move-shazam", action="store_true",
+                      help="Move <=128 kbps files from Master to Shazam folder")
+    p_br.add_argument("--tier-cleanup", action="store_true",
+                      help="Delete <=160 kbps; move 161-192 kbps to LowQuality folder")
+    p_br.add_argument("--dry-run", action="store_true")
+    p_br.set_defaults(func=cmd_audit)
+
+    # cleanup
+    p_clean = sub.add_parser("cleanup", help="Remove junk/empty dirs under My Music")
+    p_clean.add_argument("--dry-run", action="store_true")
+    p_clean.set_defaults(func=cmd_cleanup)
+
+    # shazam
+    p_shazam = sub.add_parser("shazam", help="Shazam manual-tagging helpers")
+    p_shazam_sub = p_shazam.add_subparsers(dest="action", required=True)
+    p_shazam_stage = p_shazam_sub.add_parser(
+        "stage", help="Move Shazam-queue files from Master to My Music/Shazam"
+    )
+    p_shazam_stage.add_argument("--dry-run", action="store_true",
+                                help="Preview moves without relocating files")
+    p_shazam_stage.set_defaults(func=cmd_shazam)
+
+    # relocate
+    p_reloc = sub.add_parser(
+        "relocate",
+        help="Move WAV / Persian / comedy from Master to My Music (parent)",
+    )
+    p_reloc.add_argument("--dry-run", action="store_true",
+                         help="Preview moves without relocating files")
+    p_reloc.set_defaults(func=cmd_relocate)
+
+    # tag
+    p_tag = sub.add_parser("tag", help="Tag untagged files via AcoustID")
+    _add_days_full(p_tag)
+    p_tag.add_argument("--dry-run", action="store_true",
+                       help="Preview matches without writing tags")
+    p_tag.add_argument("--limit", type=int, default=None,
+                       help="Process at most N files (for testing)")
+    p_tag.set_defaults(func=cmd_tag)
+
+    # cuts
+    p_cuts = sub.add_parser("cuts", help="Standardize cut tags; dedupe same-song versions")
+    p_cuts_sub = p_cuts.add_subparsers(dest="action", required=True)
+    p_cuts_std = p_cuts_sub.add_parser(
+        "standardize", help="Rename intro aliases to canonical Intro Clean"
+    )
+    _add_days_full(p_cuts_std)
+    p_cuts_std.add_argument("--dry-run", action="store_true")
+    p_cuts_std.set_defaults(func=cmd_cuts)
+    p_cuts_dd = p_cuts_sub.add_parser(
+        "dedupe", help="Remove alternate cuts when Intro Clean exists (narrow)"
+    )
+    _add_days_full(p_cuts_dd)
+    p_cuts_dd.add_argument(
+        "--mode", choices=["narrow", "strict"], default="narrow",
+        help="narrow: only when intro cut exists (default)",
+    )
+    p_cuts_dd.add_argument(
+        "--apply", action="store_true",
+        help="Delete files (default is dry-run report only)",
+    )
+    p_cuts_dd.set_defaults(func=cmd_cuts)
+
     # compare
     p_cmp = sub.add_parser("compare", help="Compare old folders to Master")
     p_cmp.add_argument("dirs", nargs="*", help="Old directories to scan")
@@ -346,6 +530,11 @@ def build_parser():
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     parser = build_parser()
     args   = parser.parse_args()
     args.func(args)

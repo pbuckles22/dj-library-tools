@@ -20,7 +20,9 @@ AUDIO_EXTENSIONS = {".mp3", ".flac", ".m4a", ".wav", ".aac", ".ogg", ".alac", ".
 def _safe_filename(s: str) -> str:
     if not s or not s.strip():
         return "Unknown"
+    s = re.sub(r"[\uf00a\r\n\t]", " ", s)
     s = re.sub(r'[<>:"/\\|?*]', "", s)
+    s = re.sub(r"\s+", " ", s)
     s = s.strip().strip(".")
     return s or "Unknown"
 
@@ -92,7 +94,7 @@ def rename_by_tags(master: Path, days: float | None = None) -> tuple[int, int]:
             print(f"  {f.name} -> {new_name}")
             renamed += 1
         except OSError as e:
-            print(f"  ERROR renaming {f.name}: {e}")
+            print(f"  ERROR renaming file: {e}")
 
     print(f"Renamed: {renamed}  Skipped: {skipped}  Frozen (untouched): {frozen_skip}")
     return renamed, skipped

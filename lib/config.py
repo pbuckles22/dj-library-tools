@@ -48,24 +48,34 @@ def load() -> dict:
     merged.pop("_comment", None)
 
     master = _resolve(merged.get("master", ""))
-    new_music_cfg = merged.get("new_music")
-    if new_music_cfg:
-        new_music = _resolve(new_music_cfg)
+
+    # NewMusic is normally a sibling of Master on the NAS; local config can override.
+    # Accept both "newmusic" (canonical) and legacy "new_music".
+    if "newmusic" in local or "new_music" in local:
+        newmusic_cfg = local.get("newmusic", local.get("new_music"))
+        newmusic = _resolve(newmusic_cfg)
+    elif merged.get("newmusic") or merged.get("new_music"):
+        newmusic = _resolve(merged.get("newmusic") or merged.get("new_music"))
     else:
-        new_music = master.parent / "NewMusic"
+        newmusic = (master.parent / "NewMusic").resolve()
 
     gig_usb_cfg = merged.get("gig_usb", {})
     gig_usb = _resolve(gig_usb_cfg) if gig_usb_cfg else Path()
 
     return {
         "master":               master,
-        "new_music":            new_music,
+        "newmusic":             newmusic,
+        "new_music":            newmusic,
         "serato_latest_import": _resolve(merged.get("serato_latest_import", "")),
         "rekordbox_music":      _resolve(merged.get("rekordbox_music", "")),
         "gig_usb":              gig_usb,
         "lexicon_root":         _resolve(merged.get("lexicon_root", master)),
         "nas_volume":           merged.get("nas_volume", "buckles"),
         "nas_link":             _resolve(merged.get("nas_link", "")),
+        "acoustid_api_key":     str(merged.get("acoustid_api_key", "") or "").strip(),
+        "musicbrainz_app":      str(
+            merged.get("musicbrainz_app", "") or "dj-library-tools/1.0"
+        ).strip(),
     }
 
 
@@ -73,8 +83,12 @@ def get_master() -> Path:
     return load()["master"]
 
 
+def get_newmusic() -> Path:
+    return load()["newmusic"]
+
+
 def get_new_music() -> Path:
-    return load()["new_music"]
+    return load()["newmusic"]
 
 
 def get_serato() -> Path:
@@ -91,6 +105,23 @@ def get_gig_usb() -> Path:
 
 def get_nas_volume() -> str:
     return load()["nas_volume"]
+
+
+def get_acoustid_key() -> str:
+    return load()["acoustid_api_key"]
+
+
+def get_musicbrainz_app() -> str:
+    return load()["musicbrainz_app"]
+
+
+def require_acoustid_key() -> str:
+    key = get_acoustid_key()
+    if not key:
+        print("Error: acoustid_api_key not set in config.local.json")
+        print("  Get a key at https://acoustid.org/new-application")
+        sys.exit(1)
+    return key
 
 
 def ensure_nas_link() -> None:

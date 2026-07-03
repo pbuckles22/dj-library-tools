@@ -1,7 +1,41 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Build / output
+dist/
+build/
+out/
+coverage/
+.cache/
+
+# Local handoff notes (keep _template.md and README in repo)
+.cursor/handoff/handoff-*.md
+.cursor/handoff/*-handoff-*.md
+doc/handoff/HANDOFF-*.md
+doc/handoff/*-HANDOFF-*.md
 
 # Local config overrides (machine-specific paths)
 config.local.json

@@ -83,7 +83,7 @@ def sync(src: Path, dst: Path, label: str = "") -> None:
     dst.mkdir(parents=True, exist_ok=True)
 
     tag = f" ({label})" if label else ""
-    print(f"Syncing{tag}: {src} → {dst}")
+    print(f"Syncing{tag}: {src} -> {dst}")
 
     if platform.system() == "Windows":
         rc = _robocopy(src, dst)
