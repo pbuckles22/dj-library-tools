@@ -1,0 +1,32 @@
+---
+description: When an epic’s in-scope work is done, run epic close automatically — do not wait for the user to ask
+globs: "PM_PLAN.md,doc/PROJECT_STATUS.md,AGENT_HANDOFF.md,doc/requirements/**/*.md"
+alwaysApply: true
+---
+
+# Epic close (automatic)
+
+**Do not wait for the user to ask.** When the last in-scope feature of an epic meets acceptance (Tier 1 green + applicable Tier 2 / manual smoke; cuts already recorded), run **epic close** in the same session (or at the start of the next turn if the ship commit already landed).
+
+## Quality gates (required — reuse handoff checklist)
+
+Epic close **includes** [.cursor/rules/handoff-checklist.mdc](handoff-checklist.mdc). Run those steps first and record results in the close note:
+
+1. Code review (code-reviewer)
+2. Tech debt evaluation (tech-debt-evaluator) → update `TECH_DEBT.md` as needed
+3. Tests / coverage (merge-ready command from `AGENT_HANDOFF.md` / `TEST_PLAN.md`)
+4. Project readiness (optional / N/A)
+5. Security review when relevant (security-reviewer)
+6. Tier 2 when the epic’s behavior requires it
+
+Do **not** treat epic close as docs-only and skip review, debt, or tests.
+
+## Then status close
+
+Follow [.cursor/skills/pm-governance/SKILL.md](../skills/pm-governance/SKILL.md) → *Epic close*: mark the epic/phase complete in `PM_PLAN` / product plan, sync `doc/PROJECT_STATUS.md` + `AGENT_HANDOFF.md` → *Current state*, write the close/handoff note, commit/push per github-feature-workflow, summarize for the user.
+
+## Do not auto-do on close
+
+- Start the next epic’s implementation unless the user already asked or **Next** already directed it.
+- Retire prototypes / dual trees or other deferred debt unless the user or plan **Next** says so this session.
+- Re-open explicitly cut features.

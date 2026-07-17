@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Handoff checklist (mandatory before handoff)
 
+Also required as the **quality-gate half of epic close** — see [.cursor/rules/epic-close.mdc](epic-close.mdc). When an epic finishes, run this checklist first, then finish epic status docs (do not wait for the user to ask).
+
 **SDD:** Pull requests are not used. This checklist (plus [.cursor/rules/pre-commit-gate.mdc](pre-commit-gate.mdc) before commits) is the review gate.
 
 When the user wants a handoff, or when you are writing or updating a handoff note:

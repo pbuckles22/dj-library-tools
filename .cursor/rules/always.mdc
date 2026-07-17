@@ -23,4 +23,4 @@ Cross-platform Python CLI to manage the **Master** DJ music library on NAS and s
 
 **Handoff:** handoff-checklist.mdc when user wants a handoff.
 
-**Upstream:** Tracks [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate) — `git fetch upstream && git merge upstream/main` for shared skills/rules.
+**Upstream:** Tracks [AgenticTemplate](https://github.com/pbuckles22/AgenticTemplate) — `git fetch upstream && git merge upstream/main` for shared skills/rules. **Epic close:** when an epic's in-scope work is done, run pm-governance *Epic close* automatically (includes `handoff-checklist.mdc`) � do not wait for the user to ask (`.cursor/rules/epic-close.mdc`).

@@ -264,3 +264,7 @@ gh run watch "$run" --exit-status
 | [notes/SERATO_SETUP.md](notes/SERATO_SETUP.md) | Local-first Serato + DJ_USB |
 | [doc/inbox-from-meowdoku/](doc/inbox-from-meowdoku/) | Historical pointer only (promoted) |
 | [README.md](README.md) | CLI reference (Serato-first) |
+
+## Epic close (automatic)
+
+When an epic's in-scope work is done, **do not wait for the user to ask**. Run [.cursor/rules/epic-close.mdc](.cursor/rules/epic-close.mdc) / pm-governance *Epic close*: **handoff checklist first**, then mark the epic complete in plan/status docs, close note, commit/push, summarize. See [.cursor/skills/pm-governance/SKILL.md](.cursor/skills/pm-governance/SKILL.md).
