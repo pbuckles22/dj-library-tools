@@ -1,0 +1,31 @@
+---
+description: Conventions for the transient doc/gemini/ folder used to exchange files with Gemini (or another external LLM). Create it on handoff if missing.
+globs: "doc/gemini/**"
+alwaysApply: true
+---
+
+# Gemini handoff folder (`doc/gemini/`)
+
+`doc/gemini/` is a **transient scratch drop-zone** for handing files to an external LLM (Gemini)
+and bringing its output back. It is **not canonical** — the live repo source and tracked docs are
+the source of truth. Treat everything inside as disposable.
+
+## When the user asks to "hand off to Gemini" (or exchange files with Gemini)
+
+1. **Create the folder if it doesn't exist** (`doc/gemini/` + `README.md`). Never block on it
+   being missing — just create it.
+2. **Reload clean:** delete the existing working files first (keep `README.md`), then repopulate
+   for the new exchange.
+3. Put files **flat — NO subdirectories**:
+   - one or more **context Markdown** files (e.g. `CONTEXT.md`; multiple are fine for different
+     topics) stating the ask, environment, current status, and the specific question(s) for Gemini;
+   - the **relevant code files**, copied in by **base filename** (flatten paths; if two share a
+     name, prefix to disambiguate). These are read-only snapshots — note that the live path under
+     the repo is canonical.
+4. **Hard cap: 10 files total** in `doc/gemini/` (including `README.md`). Keep it lean — copy only
+   what Gemini needs to answer.
+
+## After Gemini responds
+
+Fold accepted results into canonical code/docs. Leave the folder for the next round; it is wiped
+and reloaded on reuse (step 2). Do **not** treat its contents as durable state.
